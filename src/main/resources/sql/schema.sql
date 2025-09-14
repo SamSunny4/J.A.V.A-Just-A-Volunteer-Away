@@ -54,9 +54,13 @@ CREATE TABLE user_points (
     level INT DEFAULT 1,
     rank VARCHAR(50) DEFAULT 'Newcomer',
     tasks_completed INT DEFAULT 0,
+    tasks_cancelled INT DEFAULT 0,
+    tasks_reassigned INT DEFAULT 0,
     hours_volunteered INT DEFAULT 0,
     streak_days INT DEFAULT 0,
     last_activity_date DATE,
+    leaderboard_position INT,
+    badges TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
@@ -69,16 +73,19 @@ CREATE TABLE tasks (
     description TEXT NOT NULL,
     requester_id INT NOT NULL,
     volunteer_id INT,
-    status ENUM('PENDING', 'ASSIGNED',  'COMPLETED', 'CANCELLED') DEFAULT 'PENDING',
+    status ENUM('PENDING', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'AVAILABLE', 'REASSIGNED') DEFAULT 'AVAILABLE',
     location TEXT,
     scheduled_date DATE NOT NULL,
     scheduled_time TIME NOT NULL,
     estimated_duration INT NOT NULL, -- in minutes
     urgency_level ENUM('LOW', 'MEDIUM', 'HIGH') DEFAULT 'MEDIUM',
+    previous_volunteer_id INT,
+    reassignment_reason TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (requester_id) REFERENCES users(user_id),
-    FOREIGN KEY (volunteer_id) REFERENCES users(user_id)
+    FOREIGN KEY (volunteer_id) REFERENCES users(user_id),
+    FOREIGN KEY (previous_volunteer_id) REFERENCES users(user_id)
 );
 
 -- Task history table for tracking changes
@@ -86,13 +93,18 @@ CREATE TABLE task_history (
     history_id INT PRIMARY KEY AUTO_INCREMENT,
     task_id INT NOT NULL,
     changed_by_id INT NOT NULL,
-    changed_by ENUM('VOLUNTEER', 'ELDERLY'),
-    previous_status ENUM('PENDING', 'ASSIGNED', 'COMPLETED', 'CANCELLED'),
-    new_status ENUM('PENDING', 'ASSIGNED', 'COMPLETED', 'CANCELLED'),
+    changed_by ENUM('VOLUNTEER', 'ELDERLY', 'ADMIN'),
+    previous_status ENUM('PENDING', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'AVAILABLE', 'REASSIGNED'),
+    new_status ENUM('PENDING', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'AVAILABLE', 'REASSIGNED'),
+    previous_volunteer_id INT,
+    new_volunteer_id INT,
+    reassignment_reason TEXT,
     notes TEXT,
     changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (task_id) REFERENCES tasks(task_id),
-    FOREIGN KEY (changed_by_id) REFERENCES users(user_id)
+    FOREIGN KEY (changed_by_id) REFERENCES users(user_id),
+    FOREIGN KEY (previous_volunteer_id) REFERENCES users(user_id),
+    FOREIGN KEY (new_volunteer_id) REFERENCES users(user_id)
 );
 
 -- Donations table
