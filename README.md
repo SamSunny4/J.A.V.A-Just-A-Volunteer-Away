@@ -1,11 +1,11 @@
 # J.A.V.A (Just a Volunteer Away)
 
-A community-driven platform that connects volunteers with elderly individuals who need help with daily tasks.  
+A community-driven platform that connects volunteers with elderly individuals who need help with daily tasks.
 Our mission: make volunteering more accessible and ensure elderly users receive reliable support.
 
 ---
 
-## ✨ Features
+## Features
 
 - **User Management**: Profiles for both elderly users and volunteers.
 - **Task Management**: Schedule, assign, and track tasks easily.
@@ -18,51 +18,45 @@ Our mission: make volunteering more accessible and ensure elderly users receive 
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- Node.js or Python (depending on your stack)
-- Database (e.g., MySQL, PostgreSQL, or MongoDB)
+- Java (JDK 8 or higher)
+- MySQL Database
 - Git
 
 ### Installation
 
 1. **Clone the repository:**
+
    ```sh
    git clone https://github.com/your-username/JAVA.git
    ```
 2. **Navigate to the project folder:**
+
    ```sh
    cd JAVA
    ```
-3. **Install dependencies:**
+3. **Set up the MySQL database:**
 
-   For Node.js:
-   ```sh
-   npm install
-   ```
+   - Create a new MySQL database (e.g., `java_db`).
+   - Import the provided SQL schema (if available) or follow instructions in the `/database` folder.
+4. **Configure database connection:**
 
-   For Python:
-   ```sh
-   pip install -r requirements.txt
-   ```
+   - Edit the configuration file (e.g., `config.properties` or as specified in the code) with your MySQL credentials.
+5. **Build and run the application:**
 
-4. **Run the app:**
-
-   For Node.js:
-   ```sh
-   npm start
-   ```
-
-   For Python:
-   ```sh
-   python app.py
-   ```
+   - Using command line:
+     ```sh
+     javac -d bin src/**/*.java
+     java -cp bin Main
+     ```
+   - Or open the project in your preferred Java IDE (e.g., IntelliJ IDEA, Eclipse), build, and run the `Main` class.
 
 ---
 
-## 🛣️ Roadmap
+## Roadmap
 
 - Mobile App (React Native / Flutter)
 - AI-powered volunteer-task matching
@@ -71,7 +65,7 @@ Our mission: make volunteering more accessible and ensure elderly users receive 
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! To get started:
 
@@ -88,14 +82,22 @@ We welcome contributions! To get started:
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🌟 Vision
+## Vision
 
-J.A.V.A (Just a Volunteer Away) bridges the gap between those in need and those willing to help.  
+J.A.V.A (Just a Volunteer Away) bridges the gap between those in need and those willing to help.
 Together, we can build stronger, more supportive communities.
 
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+---
+
+## Vision
+
+J.A.V.A (Just a Volunteer Away) bridges the gap between those in need and those willing to help.
+Together, we can build stronger, more supportive communities.
