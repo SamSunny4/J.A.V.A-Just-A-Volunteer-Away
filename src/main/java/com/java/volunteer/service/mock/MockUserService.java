@@ -1,9 +1,5 @@
 package com.java.volunteer.service.mock;
 
-import com.java.volunteer.model.User;
-import com.java.volunteer.model.UserRole;
-import com.java.volunteer.service.UserService;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -11,6 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import com.java.volunteer.model.User;
+import com.java.volunteer.model.UserRole;
+import com.java.volunteer.service.UserService;
 
 /**
  * Mock implementation of UserService for testing and development

@@ -1,10 +1,11 @@
 package com.java.volunteer.ui;
 
 import java.util.Optional;
+
 import com.java.volunteer.model.User;
-import com.java.volunteer.service.UserService;
 import com.java.volunteer.service.TaskService;
 import com.java.volunteer.service.UserPointsService;
+import com.java.volunteer.service.UserService;
 
 /**
  * Login screen for user authentication
