@@ -1,133 +1,132 @@
 package com.java.volunteer.service;
 
+import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
-import java.util.Optional;
 
 import com.java.volunteer.model.Task;
-import com.java.volunteer.model.TaskHistory;
 
 /**
  * Service interface for task-related operations
  */
 public interface TaskService {
-    /**
-     * Create a new task
-     * @param task the task to create
-     * @return the created task
-     */
-    Task createTask(Task task);
     
     /**
-     * Get a task by ID
-     * @param taskId the task ID
-     * @return an Optional containing the task if found, or empty if not found
+     * Create a new task
+     * 
+     * @param title the task title
+     * @param description the task description
+     * @param requesterId the ID of the elderly user who requested the task
+     * @param location the task location
+     * @param scheduledDate the scheduled date
+     * @param scheduledTime the scheduled time
+     * @param estimatedDuration the estimated duration in minutes
+     * @param urgencyLevel the urgency level (LOW, MEDIUM, HIGH)
+     * @return the created task with ID
+     * @throws SQLException if a database error occurs
+     * @throws IllegalArgumentException if any parameter is invalid
      */
-    Optional<Task> getTaskById(int taskId);
+    Task createTask(String title, String description, int requesterId, String location,
+                   LocalDate scheduledDate, LocalTime scheduledTime, int estimatedDuration,
+                   String urgencyLevel) throws SQLException, IllegalArgumentException;
     
     /**
      * Get all tasks
+     * 
      * @return a list of all tasks
+     * @throws SQLException if a database error occurs
      */
-    List<Task> getAllTasks();
+    List<Task> getAllTasks() throws SQLException;
     
     /**
-     * Get tasks by requester ID
-     * @param requesterId the requester user ID
-     * @return a list of tasks requested by the user
+     * Get available tasks (not assigned to any volunteer)
+     * 
+     * @return a list of available tasks
+     * @throws SQLException if a database error occurs
      */
-    List<Task> getTasksByRequesterId(int requesterId);
-    
-    /**
-     * Get tasks by volunteer ID
-     * @param volunteerId the volunteer user ID
-     * @return a list of tasks assigned to the volunteer
-     */
-    List<Task> getTasksByVolunteerId(int volunteerId);
+    List<Task> getAvailableTasks() throws SQLException;
     
     /**
      * Get tasks by status
+     * 
      * @param status the task status
      * @return a list of tasks with the specified status
+     * @throws SQLException if a database error occurs
      */
-    List<Task> getTasksByStatus(Task.Status status);
+    List<Task> getTasksByStatus(String status) throws SQLException;
     
     /**
-     * Get available tasks that can be assigned to volunteers
-     * @return a list of available tasks
+     * Get tasks requested by an elderly user
+     * 
+     * @param requesterId the elderly user ID
+     * @return a list of tasks requested by the specified user
+     * @throws SQLException if a database error occurs
      */
-    List<Task> getAvailableTasks();
+    List<Task> getTasksByRequesterId(int requesterId) throws SQLException;
     
     /**
-     * Get tasks scheduled for a specific date
-     * @param date the scheduled date
-     * @return a list of tasks scheduled for the specified date
+     * Get tasks assigned to a volunteer
+     * 
+     * @param volunteerId the volunteer ID
+     * @return a list of tasks assigned to the specified volunteer
+     * @throws SQLException if a database error occurs
      */
-    List<Task> getTasksByScheduledDate(LocalDate date);
+    List<Task> getTasksByVolunteerId(int volunteerId) throws SQLException;
     
     /**
-     * Assign a task to a volunteer
+     * Get a task by ID
+     * 
      * @param taskId the task ID
-     * @param volunteerId the volunteer user ID
-     * @param changedById the ID of the user making the change
-     * @param changedBy the role of the user making the change
-     * @return the updated task
+     * @return the task or null if not found
+     * @throws SQLException if a database error occurs
      */
-    Task assignTask(int taskId, int volunteerId, int changedById, TaskHistory.ChangedBy changedBy);
-    
-    /**
-     * Start a task (change status to IN_PROGRESS)
-     * @param taskId the task ID
-     * @param volunteerId the volunteer user ID
-     * @return the updated task
-     */
-    Task startTask(int taskId, int volunteerId);
-    
-    /**
-     * Complete a task
-     * @param taskId the task ID
-     * @param volunteerId the volunteer user ID
-     * @return the updated task
-     */
-    Task completeTask(int taskId, int volunteerId);
-    
-    /**
-     * Cancel a task
-     * @param taskId the task ID
-     * @param userId the user ID cancelling the task
-     * @param changedBy the role of the user cancelling the task
-     * @param reason the reason for cancellation
-     * @return the updated task
-     */
-    Task cancelTask(int taskId, int userId, TaskHistory.ChangedBy changedBy, String reason);
-    
-    /**
-     * Reassign a task (remove volunteer and make available again)
-     * @param taskId the task ID
-     * @param requesterId the requester user ID
-     * @param reason the reason for reassignment
-     * @return the updated task
-     */
-    Task reassignTask(int taskId, int requesterId, String reason);
+    Task getTaskById(int taskId) throws SQLException;
     
     /**
      * Update a task
-     * @param task the task to update
+     * 
+     * @param task the task with updated information
      * @return the updated task
+     * @throws SQLException if a database error occurs
      */
-    Task updateTask(Task task);
+    Task updateTask(Task task) throws SQLException;
+    
+    /**
+     * Assign a task to a volunteer
+     * 
+     * @param taskId the task ID
+     * @param volunteerId the volunteer ID
+     * @return true if the task was assigned, false otherwise
+     * @throws SQLException if a database error occurs
+     */
+    boolean assignTaskToVolunteer(int taskId, int volunteerId) throws SQLException;
+    
+    /**
+     * Update the status of a task
+     * 
+     * @param taskId the task ID
+     * @param status the new status
+     * @return true if the status was updated, false otherwise
+     * @throws SQLException if a database error occurs
+     */
+    boolean updateTaskStatus(int taskId, String status) throws SQLException;
+    
+    /**
+     * Cancel a task
+     * 
+     * @param taskId the task ID
+     * @return true if the task was cancelled, false otherwise
+     * @throws SQLException if a database error occurs
+     */
+    boolean cancelTask(int taskId) throws SQLException;
     
     /**
      * Delete a task
+     * 
      * @param taskId the task ID
      * @return true if the task was deleted, false otherwise
+     * @throws SQLException if a database error occurs
      */
-    boolean deleteTask(int taskId);
-    
-    /**
-     * Get task history
-     * @param taskId the task ID
-     * @return a list of task history entries
-     */
-    List<TaskHistory> getTaskHistory(int taskId);
+    boolean deleteTask(int taskId) throws SQLException;
 }

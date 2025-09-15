@@ -5,57 +5,63 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 /**
- * Task entity class that represents a task in the system
+ * Task model representing volunteer tasks requested by elderly users
  */
 public class Task {
-    // Enum for task status
-    public enum Status {
-        PENDING, ASSIGNED, IN_PROGRESS, COMPLETED, CANCELLED, AVAILABLE, REASSIGNED
-    }
-    
-    // Enum for task urgency level
-    public enum UrgencyLevel {
-        LOW, MEDIUM, HIGH
-    }
-
     private int taskId;
     private String title;
     private String description;
-    private int requesterId;
-    private Integer volunteerId;
-    private Status status;
+    private int requesterId; // Elderly user who requested the task
+    private Integer volunteerId; // Volunteer assigned to the task (may be null if not assigned)
+    private String status; // PENDING, ASSIGNED, IN_PROGRESS, COMPLETED, CANCELLED, AVAILABLE, REASSIGNED
     private String location;
     private LocalDate scheduledDate;
     private LocalTime scheduledTime;
     private int estimatedDuration; // in minutes
-    private UrgencyLevel urgencyLevel;
-    private Integer previousVolunteerId;
+    private String urgencyLevel; // LOW, MEDIUM, HIGH
+    private Integer previousVolunteerId; // Previous volunteer if task was reassigned
     private String reassignmentReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
-    // References for convenience (not stored in DB)
-    private User requester;
-    private User volunteer;
-    private User previousVolunteer;
 
     // Default constructor
     public Task() {
-        this.status = Status.AVAILABLE;
-        this.urgencyLevel = UrgencyLevel.MEDIUM;
     }
 
-    // Constructor with essential fields
-    public Task(String title, String description, int requesterId, LocalDate scheduledDate, 
-                LocalTime scheduledTime, int estimatedDuration, UrgencyLevel urgencyLevel) {
+    // Constructor with required fields for creating a new task
+    public Task(String title, String description, int requesterId, String location,
+                LocalDate scheduledDate, LocalTime scheduledTime, int estimatedDuration, String urgencyLevel) {
         this.title = title;
         this.description = description;
         this.requesterId = requesterId;
+        this.location = location;
         this.scheduledDate = scheduledDate;
         this.scheduledTime = scheduledTime;
         this.estimatedDuration = estimatedDuration;
         this.urgencyLevel = urgencyLevel;
-        this.status = Status.AVAILABLE;
+        this.status = "AVAILABLE";
+    }
+
+    // Full constructor
+    public Task(int taskId, String title, String description, int requesterId, Integer volunteerId,
+                String status, String location, LocalDate scheduledDate, LocalTime scheduledTime,
+                int estimatedDuration, String urgencyLevel, Integer previousVolunteerId,
+                String reassignmentReason, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        this.taskId = taskId;
+        this.title = title;
+        this.description = description;
+        this.requesterId = requesterId;
+        this.volunteerId = volunteerId;
+        this.status = status;
+        this.location = location;
+        this.scheduledDate = scheduledDate;
+        this.scheduledTime = scheduledTime;
+        this.estimatedDuration = estimatedDuration;
+        this.urgencyLevel = urgencyLevel;
+        this.previousVolunteerId = previousVolunteerId;
+        this.reassignmentReason = reassignmentReason;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
     // Getters and Setters
@@ -99,11 +105,11 @@ public class Task {
         this.volunteerId = volunteerId;
     }
 
-    public Status getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(Status status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 
@@ -139,11 +145,11 @@ public class Task {
         this.estimatedDuration = estimatedDuration;
     }
 
-    public UrgencyLevel getUrgencyLevel() {
+    public String getUrgencyLevel() {
         return urgencyLevel;
     }
 
-    public void setUrgencyLevel(UrgencyLevel urgencyLevel) {
+    public void setUrgencyLevel(String urgencyLevel) {
         this.urgencyLevel = urgencyLevel;
     }
 
@@ -179,80 +185,20 @@ public class Task {
         this.updatedAt = updatedAt;
     }
 
-    public User getRequester() {
-        return requester;
-    }
-
-    public void setRequester(User requester) {
-        this.requester = requester;
-    }
-
-    public User getVolunteer() {
-        return volunteer;
-    }
-
-    public void setVolunteer(User volunteer) {
-        this.volunteer = volunteer;
-    }
-
-    public User getPreviousVolunteer() {
-        return previousVolunteer;
-    }
-
-    public void setPreviousVolunteer(User previousVolunteer) {
-        this.previousVolunteer = previousVolunteer;
-    }
-    
-    // Method to assign a volunteer to this task
-    public void assignVolunteer(int volunteerId) {
-        this.volunteerId = volunteerId;
-        this.status = Status.ASSIGNED;
-    }
-    
-    // Method to start a task
-    public void startTask() {
-        if (this.status == Status.ASSIGNED) {
-            this.status = Status.IN_PROGRESS;
-        }
-    }
-    
-    // Method to complete a task
-    public void completeTask() {
-        if (this.status == Status.IN_PROGRESS || this.status == Status.ASSIGNED) {
-            this.status = Status.COMPLETED;
-        }
-    }
-    
-    // Method to cancel a task
-    public void cancelTask() {
-        this.status = Status.CANCELLED;
-    }
-    
-    // Method to reassign a task from current volunteer
-    public void reassignTask(String reason) {
-        if (this.volunteerId != null) {
-            this.previousVolunteerId = this.volunteerId;
-            this.volunteerId = null;
-            this.reassignmentReason = reason;
-            this.status = Status.AVAILABLE;
-        }
-    }
-    
     @Override
     public String toString() {
-        String requesterName = (requester != null) ? requester.getUsername() : "Unknown";
-        String volunteerName = (volunteer != null) ? volunteer.getUsername() : "Unassigned";
-        
         return "Task{" +
                 "taskId=" + taskId +
                 ", title='" + title + '\'' +
-                ", status=" + status +
+                ", description='" + description + '\'' +
+                ", requesterId=" + requesterId +
+                ", volunteerId=" + volunteerId +
+                ", status='" + status + '\'' +
+                ", location='" + location + '\'' +
                 ", scheduledDate=" + scheduledDate +
                 ", scheduledTime=" + scheduledTime +
-                ", estimatedDuration=" + estimatedDuration + " minutes" +
-                ", urgencyLevel=" + urgencyLevel +
-                ", requester=" + requesterName +
-                ", volunteer=" + volunteerName +
+                ", estimatedDuration=" + estimatedDuration +
+                ", urgencyLevel='" + urgencyLevel + '\'' +
                 '}';
     }
 }
