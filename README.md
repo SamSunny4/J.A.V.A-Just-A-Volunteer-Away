@@ -67,6 +67,7 @@ chmod +x compile.sh run.sh
 | john_doe      | password123 | Elderly   |
 | jane_smith    | password123 | Volunteer |
 | bob_volunteer | password123 | Volunteer |
+| admin         | admin123    | Admin     |
 
 ## Main Features
 
@@ -75,13 +76,37 @@ chmod +x compile.sh run.sh
 - Create help requests
 - View your tasks
 - Remove volunteers and reassign tasks
+- Confirm task completion (two-step verification)
+- Delete tasks
 
 ### For Volunteers
 
 - Browse available tasks
 - Accept tasks
-- Complete tasks and earn points
+- Update task status
+- Confirm task completion (two-step verification)
 - View leaderboard
+
+### For Administrators
+
+- **View System Statistics** - Monitor platform health
+- **View All Users** - Complete user overview with status
+- **View All Tasks** - Comprehensive task listing
+- **View Task History** - Complete audit trail of all activities
+- **Manage Users** - Enable/disable user accounts
+- **Manage Tasks** - Delete any task (admin override)
+
+For detailed admin documentation, see [ADMIN-GUIDE.md](ADMIN-GUIDE.md)
+
+### Two-Step Task Completion
+
+Tasks require confirmation from **both volunteer and elderly** before being marked as COMPLETED:
+- Volunteer marks task as complete → Status: PENDING_ELDERLY_CONFIRMATION
+- Elderly confirms → Status: COMPLETED (points awarded!)
+- Or vice versa (elderly confirms first)
+- Once elderly confirms, volunteer cannot revert the status
+
+For details, see [TWO-STEP-COMPLETION.md](TWO-STEP-COMPLETION.md)
 
 ### Points System
 

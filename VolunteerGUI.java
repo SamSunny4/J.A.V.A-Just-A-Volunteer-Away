@@ -1,10 +1,13 @@
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -37,6 +40,7 @@ public class VolunteerGUI extends JFrame {
     private static final String LOGIN_PANEL = "Login";
     private static final String ELDERLY_PANEL = "Elderly";
     private static final String VOLUNTEER_PANEL = "Volunteer";
+    private static final String ADMIN_PANEL = "Admin";
     
     public VolunteerGUI() {
         setTitle("J.A.V.A - Just a Volunteer Away");
@@ -64,6 +68,7 @@ public class VolunteerGUI extends JFrame {
         mainPanel.add(createLoginPanel(), LOGIN_PANEL);
         mainPanel.add(createElderlyPanel(), ELDERLY_PANEL);
         mainPanel.add(createVolunteerPanel(), VOLUNTEER_PANEL);
+        mainPanel.add(createAdminPanel(), ADMIN_PANEL);
         
         add(mainPanel);
         cardLayout.show(mainPanel, LOGIN_PANEL);
@@ -118,6 +123,9 @@ public class VolunteerGUI extends JFrame {
                 if (currentUser.getRole().equals("ELDERLY")) {
                     refreshElderlyPanel();
                     cardLayout.show(mainPanel, ELDERLY_PANEL);
+                } else if (currentUser.getRole().equals("ADMIN")) {
+                    refreshAdminPanel();
+                    cardLayout.show(mainPanel, ADMIN_PANEL);
                 } else {
                     refreshVolunteerPanel();
                     cardLayout.show(mainPanel, VOLUNTEER_PANEL);
@@ -898,6 +906,419 @@ public class VolunteerGUI extends JFrame {
         
         dialog.add(scrollPane, BorderLayout.CENTER);
         dialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.setVisible(true);
+    }
+    
+    // ==================== ADMIN PANEL ====================
+    
+    private JPanel createAdminPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        // Header with logout button
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        JLabel headerLabel = new JLabel("Admin Dashboard", SwingConstants.CENTER);
+        headerLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        
+        JButton logoutButton = new JButton("Logout");
+        logoutButton.addActionListener(e -> logout());
+        
+        headerPanel.add(headerLabel, BorderLayout.CENTER);
+        headerPanel.add(logoutButton, BorderLayout.EAST);
+        panel.add(headerPanel, BorderLayout.NORTH);
+        
+        // Main content area
+        JPanel contentPanel = new JPanel(new GridLayout(2, 1, 10, 10));
+        
+        // System stats panel
+        JPanel statsPanel = new JPanel(new BorderLayout());
+        statsPanel.setBorder(BorderFactory.createTitledBorder("System Statistics"));
+        JTextArea statsArea = new JTextArea();
+        statsArea.setEditable(false);
+        statsArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        JScrollPane statsScroll = new JScrollPane(statsArea);
+        statsPanel.add(statsScroll, BorderLayout.CENTER);
+        
+        // Control buttons panel
+        JPanel controlsPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+        controlsPanel.setBorder(BorderFactory.createTitledBorder("Admin Controls"));
+        
+        JButton viewUsersBtn = new JButton("View All Users");
+        JButton viewTasksBtn = new JButton("View All Tasks");
+        JButton viewHistoryBtn = new JButton("View Task History");
+        JButton manageUsersBtn = new JButton("Manage Users");
+        JButton manageTasksBtn = new JButton("Manage Tasks");
+        JButton refreshStatsBtn = new JButton("Refresh Statistics");
+        
+        viewUsersBtn.addActionListener(e -> showAllUsers());
+        viewTasksBtn.addActionListener(e -> showAllTasks());
+        viewHistoryBtn.addActionListener(e -> showTaskHistory());
+        manageUsersBtn.addActionListener(e -> showManageUsers());
+        manageTasksBtn.addActionListener(e -> showManageTasks());
+        refreshStatsBtn.addActionListener(e -> {
+            statsArea.setText(DatabaseManager.getSystemStats());
+        });
+        
+        controlsPanel.add(viewUsersBtn);
+        controlsPanel.add(viewTasksBtn);
+        controlsPanel.add(viewHistoryBtn);
+        controlsPanel.add(manageUsersBtn);
+        controlsPanel.add(manageTasksBtn);
+        controlsPanel.add(refreshStatsBtn);
+        
+        contentPanel.add(statsPanel);
+        contentPanel.add(controlsPanel);
+        
+        panel.add(contentPanel, BorderLayout.CENTER);
+        
+        return panel;
+    }
+    
+    private void refreshAdminPanel() {
+        // Panel will refresh when buttons are clicked
+    }
+    
+    private void showAllUsers() {
+        List<User> users = DatabaseManager.getAllUsers();
+        
+        if (users.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No users found.");
+            return;
+        }
+        
+        String[] columnNames = {"ID", "Username", "Name", "Email", "Role", "Points", "Tasks", "Status"};
+        Object[][] data = new Object[users.size()][8];
+        
+        for (int i = 0; i < users.size(); i++) {
+            User user = users.get(i);
+            data[i][0] = user.getUserId();
+            data[i][1] = user.getUsername();
+            data[i][2] = user.getFirstName() + " " + user.getLastName();
+            data[i][3] = user.getEmail();
+            data[i][4] = user.getRole();
+            data[i][5] = user.getPoints();
+            data[i][6] = user.getTasksCompleted();
+            data[i][7] = user.isActive() ? "Active" : "Disabled";
+        }
+        
+        JDialog dialog = new JDialog(this, "All Users", true);
+        dialog.setSize(900, 500);
+        dialog.setLocationRelativeTo(this);
+        
+        JTable table = new JTable(data, columnNames);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        JScrollPane scrollPane = new JScrollPane(table);
+        
+        JButton closeButton = new JButton("Close");
+        closeButton.addActionListener(e -> dialog.dispose());
+        
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(closeButton);
+        
+        dialog.add(scrollPane, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.setVisible(true);
+    }
+    
+    private void showAllTasks() {
+        List<Task> tasks = DatabaseManager.getAllTasks();
+        
+        if (tasks.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No tasks found.");
+            return;
+        }
+        
+        String[] columnNames = {"ID", "Title", "Status", "Requester", "Volunteer", "Date", "Duration"};
+        Object[][] data = new Object[tasks.size()][7];
+        
+        for (int i = 0; i < tasks.size(); i++) {
+            Task task = tasks.get(i);
+            data[i][0] = task.getTaskId();
+            data[i][1] = task.getTitle();
+            data[i][2] = task.getStatus();
+            data[i][3] = "User #" + task.getRequesterId();
+            data[i][4] = task.getVolunteerId() != null ? "User #" + task.getVolunteerId() : "None";
+            data[i][5] = task.getScheduledDate();
+            data[i][6] = task.getEstimatedDuration() + " min";
+        }
+        
+        JDialog dialog = new JDialog(this, "All Tasks", true);
+        dialog.setSize(900, 500);
+        dialog.setLocationRelativeTo(this);
+        
+        JTable table = new JTable(data, columnNames);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        JScrollPane scrollPane = new JScrollPane(table);
+        
+        JButton closeButton = new JButton("Close");
+        closeButton.addActionListener(e -> dialog.dispose());
+        
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(closeButton);
+        
+        dialog.add(scrollPane, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.setVisible(true);
+    }
+    
+    private void showTaskHistory() {
+        List<String> history = DatabaseManager.getTaskHistory();
+        
+        if (history.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No task history found.");
+            return;
+        }
+        
+        JDialog dialog = new JDialog(this, "Task History", true);
+        dialog.setSize(900, 500);
+        dialog.setLocationRelativeTo(this);
+        
+        JTextArea historyArea = new JTextArea();
+        historyArea.setEditable(false);
+        historyArea.setFont(new Font("Monospaced", Font.PLAIN, 11));
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("TASK HISTORY LOG\n");
+        for (int i = 0; i < 100; i++) sb.append("=");
+        sb.append("\n\n");
+        
+        for (String entry : history) {
+            sb.append(entry).append("\n");
+        }
+        
+        historyArea.setText(sb.toString());
+        historyArea.setCaretPosition(0);
+        
+        JScrollPane scrollPane = new JScrollPane(historyArea);
+        
+        JButton closeButton = new JButton("Close");
+        closeButton.addActionListener(e -> dialog.dispose());
+        
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(closeButton);
+        
+        dialog.add(scrollPane, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.setVisible(true);
+    }
+    
+    private void showManageUsers() {
+        List<User> users = DatabaseManager.getAllUsers();
+        
+        if (users.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No users found.");
+            return;
+        }
+        
+        // Filter out admin users from management
+        List<User> manageableUsers = new ArrayList<>();
+        for (User user : users) {
+            if (!user.getRole().equals("ADMIN")) {
+                manageableUsers.add(user);
+            }
+        }
+        
+        if (manageableUsers.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No users available to manage.");
+            return;
+        }
+        
+        JDialog dialog = new JDialog(this, "Manage Users", true);
+        dialog.setSize(600, 400);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout(10, 10));
+        
+        JPanel topPanel = new JPanel();
+        topPanel.add(new JLabel("Select a user to enable/disable their account:"));
+        
+        JPanel centerPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        gbc.gridx = 0; gbc.gridy = 0;
+        centerPanel.add(new JLabel("User:"), gbc);
+        
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        JComboBox<String> userCombo = new JComboBox<>();
+        for (User user : manageableUsers) {
+            String status = user.isActive() ? "Active" : "Disabled";
+            userCombo.addItem(String.format("#%d - %s (%s) - %s - %s", 
+                user.getUserId(), user.getUsername(), user.getRole(), 
+                user.getFirstName() + " " + user.getLastName(), status));
+        }
+        centerPanel.add(userCombo, gbc);
+        
+        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 2;
+        JPanel actionPanel = new JPanel(new GridLayout(1, 2, 10, 0));
+        
+        JButton disableButton = new JButton("Disable Account");
+        JButton enableButton = new JButton("Enable Account");
+        
+        disableButton.addActionListener(e -> {
+            int selectedIndex = userCombo.getSelectedIndex();
+            if (selectedIndex >= 0) {
+                User selectedUser = manageableUsers.get(selectedIndex);
+                
+                if (!selectedUser.isActive()) {
+                    JOptionPane.showMessageDialog(dialog, "This account is already disabled!");
+                    return;
+                }
+                
+                int confirm = JOptionPane.showConfirmDialog(dialog,
+                    "Are you sure you want to disable account for:\n" +
+                    selectedUser.getFirstName() + " " + selectedUser.getLastName() + 
+                    " (" + selectedUser.getUsername() + ")?\n\n" +
+                    "This will cancel all their active tasks!",
+                    "Confirm Disable",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+                
+                if (confirm == JOptionPane.YES_OPTION) {
+                    if (DatabaseManager.toggleUserStatus(selectedUser.getUserId(), false)) {
+                        JOptionPane.showMessageDialog(dialog, "Account disabled successfully!");
+                        DatabaseManager.addTaskHistory(0, currentUser.getUserId(), "ADMIN_DISABLE_USER", 
+                            null, "Disabled user #" + selectedUser.getUserId());
+                        dialog.dispose();
+                        showManageUsers(); // Refresh
+                    } else {
+                        JOptionPane.showMessageDialog(dialog, "Failed to disable account!", 
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        });
+        
+        enableButton.addActionListener(e -> {
+            int selectedIndex = userCombo.getSelectedIndex();
+            if (selectedIndex >= 0) {
+                User selectedUser = manageableUsers.get(selectedIndex);
+                
+                if (selectedUser.isActive()) {
+                    JOptionPane.showMessageDialog(dialog, "This account is already active!");
+                    return;
+                }
+                
+                int confirm = JOptionPane.showConfirmDialog(dialog,
+                    "Enable account for:\n" +
+                    selectedUser.getFirstName() + " " + selectedUser.getLastName() + 
+                    " (" + selectedUser.getUsername() + ")?",
+                    "Confirm Enable",
+                    JOptionPane.YES_NO_OPTION);
+                
+                if (confirm == JOptionPane.YES_OPTION) {
+                    if (DatabaseManager.toggleUserStatus(selectedUser.getUserId(), true)) {
+                        JOptionPane.showMessageDialog(dialog, "Account enabled successfully!");
+                        DatabaseManager.addTaskHistory(0, currentUser.getUserId(), "ADMIN_ENABLE_USER", 
+                            null, "Enabled user #" + selectedUser.getUserId());
+                        dialog.dispose();
+                        showManageUsers(); // Refresh
+                    } else {
+                        JOptionPane.showMessageDialog(dialog, "Failed to enable account!", 
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        });
+        
+        actionPanel.add(disableButton);
+        actionPanel.add(enableButton);
+        centerPanel.add(actionPanel, gbc);
+        
+        JButton closeButton = new JButton("Close");
+        closeButton.addActionListener(e -> dialog.dispose());
+        
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.add(closeButton);
+        
+        dialog.add(topPanel, BorderLayout.NORTH);
+        dialog.add(centerPanel, BorderLayout.CENTER);
+        dialog.add(bottomPanel, BorderLayout.SOUTH);
+        
+        dialog.setVisible(true);
+    }
+    
+    private void showManageTasks() {
+        List<Task> tasks = DatabaseManager.getAllTasks();
+        
+        if (tasks.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No tasks found.");
+            return;
+        }
+        
+        JDialog dialog = new JDialog(this, "Manage Tasks", true);
+        dialog.setSize(600, 400);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout(10, 10));
+        
+        JPanel topPanel = new JPanel();
+        topPanel.add(new JLabel("Select a task to delete:"));
+        
+        JPanel centerPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        gbc.gridx = 0; gbc.gridy = 0;
+        centerPanel.add(new JLabel("Task:"), gbc);
+        
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        JComboBox<String> taskCombo = new JComboBox<>();
+        for (Task task : tasks) {
+            taskCombo.addItem(String.format("#%d - %s [%s] - %s", 
+                task.getTaskId(), task.getTitle(), task.getStatus(), task.getScheduledDate()));
+        }
+        centerPanel.add(taskCombo, gbc);
+        
+        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 2;
+        JButton deleteButton = new JButton("Delete Task");
+        deleteButton.setBackground(new Color(255, 100, 100));
+        
+        deleteButton.addActionListener(e -> {
+            int selectedIndex = taskCombo.getSelectedIndex();
+            if (selectedIndex >= 0) {
+                Task selectedTask = tasks.get(selectedIndex);
+                
+                int confirm = JOptionPane.showConfirmDialog(dialog,
+                    "Are you sure you want to permanently delete this task?\n\n" +
+                    "Task: " + selectedTask.getTitle() + "\n" +
+                    "Status: " + selectedTask.getStatus() + "\n" +
+                    "Date: " + selectedTask.getScheduledDate() + "\n\n" +
+                    "This action cannot be undone!",
+                    "Confirm Delete",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+                
+                if (confirm == JOptionPane.YES_OPTION) {
+                    if (DatabaseManager.adminDeleteTask(selectedTask.getTaskId())) {
+                        JOptionPane.showMessageDialog(dialog, "Task deleted successfully!");
+                        DatabaseManager.addTaskHistory(selectedTask.getTaskId(), currentUser.getUserId(), 
+                            "ADMIN_DELETE", selectedTask.getStatus(), "DELETED");
+                        dialog.dispose();
+                        showManageTasks(); // Refresh
+                    } else {
+                        JOptionPane.showMessageDialog(dialog, "Failed to delete task!", 
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        });
+        
+        centerPanel.add(deleteButton, gbc);
+        
+        JButton closeButton = new JButton("Close");
+        closeButton.addActionListener(e -> dialog.dispose());
+        
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.add(closeButton);
+        
+        dialog.add(topPanel, BorderLayout.NORTH);
+        dialog.add(centerPanel, BorderLayout.CENTER);
+        dialog.add(bottomPanel, BorderLayout.SOUTH);
         
         dialog.setVisible(true);
     }

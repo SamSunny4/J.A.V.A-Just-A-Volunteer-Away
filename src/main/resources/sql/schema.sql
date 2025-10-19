@@ -27,7 +27,7 @@ CREATE TABLE users (
     phone_number VARCHAR(15),
     address TEXT,
     date_of_birth DATE,
-    role VARCHAR(20) NOT NULL, -- 'ELDERLY' or 'VOLUNTEER'
+    role VARCHAR(20) NOT NULL, -- 'ELDERLY', 'VOLUNTEER', or 'ADMIN'
     is_active BOOLEAN DEFAULT TRUE,
     bio TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -105,6 +105,10 @@ VALUES
 ('jane_smith', 'password123', 'jane.smith@email.com', 'Jane', 'Smith', '555-5678', 'VOLUNTEER', '1995-08-22'),
 ('bob_volunteer', 'password123', 'bob.volunteer@email.com', 'Bob', 'Johnson', '555-9999', 'VOLUNTEER', '1992-03-10');
 
+-- Sample admin user (password: admin123)
+INSERT INTO users (username, password, email, first_name, last_name, phone_number, role, date_of_birth) 
+VALUES ('admin', 'admin123', 'admin@volunteer.com', 'System', 'Administrator', '555-0000', 'ADMIN', '1990-01-01');
+
 -- Create user points for volunteers
 INSERT INTO user_points (user_id, points, level, user_rank, tasks_completed, hours_volunteered)
 VALUES 
@@ -129,5 +133,5 @@ CREATE INDEX idx_users_role ON users(role);
 
 -- Display success message
 SELECT 'Database setup completed successfully!' AS Status;
-SELECT 'Sample users created: john_doe (elderly), jane_smith & bob_volunteer (volunteers)' AS Info;
-SELECT 'Default password for all users: password123' AS Credentials;
+SELECT 'Sample users created: john_doe (elderly), jane_smith & bob_volunteer (volunteers), admin (admin)' AS Info;
+SELECT 'Default passwords - Users: password123, Admin: admin123' AS Credentials;

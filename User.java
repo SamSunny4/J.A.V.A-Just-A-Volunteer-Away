@@ -9,9 +9,10 @@ public class User {
     private String firstName;
     private String lastName;
     private String phoneNumber; 
-    private String role; // "ELDERLY" or "VOLUNTEER"
+    private String role; // "ELDERLY", "VOLUNTEER", or "ADMIN"
     private int points;
     private int tasksCompleted;
+    private boolean isActive; // For account status
     
     // Constructor for new users (registration)
     public User(String username, String password, String email, String firstName, 
@@ -25,6 +26,7 @@ public class User {
         this.role = role;
         this.points = 0;
         this.tasksCompleted = 0;
+        this.isActive = true; // Default to active
     }
     
     // Constructor for existing users (from database)
@@ -39,6 +41,7 @@ public class User {
         this.role = role;
         this.points = points;
         this.tasksCompleted = tasksCompleted;
+        this.isActive = true; // Default to active
     }
     
     // Getters
@@ -52,6 +55,7 @@ public class User {
     public String getRole() { return role; }
     public int getPoints() { return points; }
     public int getTasksCompleted() { return tasksCompleted; }
+    public boolean isActive() { return isActive; }
     
     // Setters
     public void setUserId(int userId) { this.userId = userId; }
@@ -60,6 +64,7 @@ public class User {
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     public void setPoints(int points) { this.points = points; }
     public void setTasksCompleted(int tasksCompleted) { this.tasksCompleted = tasksCompleted; }
+    public void setActive(boolean isActive) { this.isActive = isActive; }
     
     @Override
     public String toString() {

@@ -547,4 +547,249 @@ public class DatabaseManager {
             return false;
         }
     }
+    
+    // ==================== ADMIN OPERATIONS ====================
+    
+    /**
+     * Get all users (for admin panel)
+     */
+    public static List<User> getAllUsers() {
+        List<User> users = new ArrayList<>();
+        String sql = "SELECT u.user_id, u.username, u.email, u.first_name, u.last_name, " +
+                     "u.phone_number, u.role, u.is_active, COALESCE(up.points, 0) as points, " +
+                     "COALESCE(up.tasks_completed, 0) as tasks_completed " +
+                     "FROM users u " +
+                     "LEFT JOIN user_points up ON u.user_id = up.user_id " +
+                     "ORDER BY u.user_id";
+        
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            while (rs.next()) {
+                User user = new User(
+                    rs.getInt("user_id"),
+                    rs.getString("username"),
+                    rs.getString("email"),
+                    rs.getString("first_name"),
+                    rs.getString("last_name"),
+                    rs.getString("phone_number"),
+                    rs.getString("role"),
+                    rs.getInt("points"),
+                    rs.getInt("tasks_completed")
+                );
+                user.setActive(rs.getBoolean("is_active"));
+                users.add(user);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting all users: " + e.getMessage());
+        }
+        return users;
+    }
+    
+    /**
+     * Get all tasks (for admin panel)
+     */
+    public static List<Task> getAllTasks() {
+        List<Task> tasks = new ArrayList<>();
+        String sql = "SELECT * FROM tasks ORDER BY task_id DESC";
+        
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            while (rs.next()) {
+                tasks.add(createTaskFromResultSet(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting all tasks: " + e.getMessage());
+        }
+        return tasks;
+    }
+    
+    /**
+     * Disable/Enable user account (admin function)
+     */
+    public static boolean toggleUserStatus(int userId, boolean isActive) {
+        String sql = "UPDATE users SET is_active = ? WHERE user_id = ?";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setBoolean(1, isActive);
+            stmt.setInt(2, userId);
+            
+            int rowsAffected = stmt.executeUpdate();
+            
+            // If disabling user, also cancel their active tasks
+            if (rowsAffected > 0 && !isActive) {
+                cancelUserActiveTasks(userId);
+            }
+            
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("Error toggling user status: " + e.getMessage());
+        }
+        return false;
+    }
+    
+    /**
+     * Cancel all active tasks for a user (when account is disabled)
+     */
+    private static void cancelUserActiveTasks(int userId) {
+        // Cancel tasks as requester
+        String sql1 = "UPDATE tasks SET status = 'CANCELLED' " +
+                      "WHERE requester_id = ? AND status NOT IN ('COMPLETED', 'CANCELLED')";
+        
+        // Remove volunteer from assigned tasks
+        String sql2 = "UPDATE tasks SET volunteer_id = NULL, status = 'AVAILABLE', " +
+                      "volunteer_confirmed = FALSE, elderly_confirmed = FALSE " +
+                      "WHERE volunteer_id = ? AND status NOT IN ('COMPLETED', 'CANCELLED')";
+        
+        try (Connection conn = getConnection()) {
+            try (PreparedStatement stmt1 = conn.prepareStatement(sql1)) {
+                stmt1.setInt(1, userId);
+                stmt1.executeUpdate();
+            }
+            try (PreparedStatement stmt2 = conn.prepareStatement(sql2)) {
+                stmt2.setInt(1, userId);
+                stmt2.executeUpdate();
+            }
+        } catch (SQLException e) {
+            System.err.println("Error cancelling user tasks: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Delete task permanently (admin function)
+     */
+    public static boolean adminDeleteTask(int taskId) {
+        String sql = "DELETE FROM tasks WHERE task_id = ?";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, taskId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error deleting task: " + e.getMessage());
+        }
+        return false;
+    }
+    
+    /**
+     * Get task history/activity log
+     */
+    public static List<String> getTaskHistory() {
+        List<String> history = new ArrayList<>();
+        String sql = "SELECT th.history_id, th.action_type, th.previous_status, th.new_status, " +
+                     "th.changed_at, t.title as task_title, t.task_id, " +
+                     "u.username as changed_by, u.role as user_role " +
+                     "FROM task_history th " +
+                     "JOIN tasks t ON th.task_id = t.task_id " +
+                     "JOIN users u ON th.changed_by_id = u.user_id " +
+                     "ORDER BY th.changed_at DESC LIMIT 100";
+        
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            while (rs.next()) {
+                String entry = String.format("[%s] %s (%s) - Task #%d '%s': %s %s -> %s",
+                    rs.getString("changed_at"),
+                    rs.getString("changed_by"),
+                    rs.getString("user_role"),
+                    rs.getInt("task_id"),
+                    rs.getString("task_title"),
+                    rs.getString("action_type"),
+                    rs.getString("previous_status") != null ? rs.getString("previous_status") : "N/A",
+                    rs.getString("new_status") != null ? rs.getString("new_status") : "N/A"
+                );
+                history.add(entry);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting task history: " + e.getMessage());
+        }
+        return history;
+    }
+    
+    /**
+     * Add task history entry
+     */
+    public static void addTaskHistory(int taskId, int userId, String actionType, 
+                                      String previousStatus, String newStatus) {
+        String sql = "INSERT INTO task_history (task_id, changed_by_id, action_type, " +
+                     "previous_status, new_status) VALUES (?, ?, ?, ?, ?)";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, taskId);
+            stmt.setInt(2, userId);
+            stmt.setString(3, actionType);
+            stmt.setString(4, previousStatus);
+            stmt.setString(5, newStatus);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error adding task history: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Get system statistics (for admin dashboard)
+     */
+    public static String getSystemStats() {
+        StringBuilder stats = new StringBuilder();
+        
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement()) {
+            
+            // Total users
+            ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as count FROM users WHERE is_active = TRUE");
+            if (rs.next()) {
+                stats.append("Active Users: ").append(rs.getInt("count")).append("\n");
+            }
+            
+            // Total volunteers
+            rs = stmt.executeQuery("SELECT COUNT(*) as count FROM users WHERE role = 'VOLUNTEER' AND is_active = TRUE");
+            if (rs.next()) {
+                stats.append("Active Volunteers: ").append(rs.getInt("count")).append("\n");
+            }
+            
+            // Total elderly
+            rs = stmt.executeQuery("SELECT COUNT(*) as count FROM users WHERE role = 'ELDERLY' AND is_active = TRUE");
+            if (rs.next()) {
+                stats.append("Active Elderly: ").append(rs.getInt("count")).append("\n");
+            }
+            
+            // Total tasks
+            rs = stmt.executeQuery("SELECT COUNT(*) as count FROM tasks");
+            if (rs.next()) {
+                stats.append("Total Tasks: ").append(rs.getInt("count")).append("\n");
+            }
+            
+            // Available tasks
+            rs = stmt.executeQuery("SELECT COUNT(*) as count FROM tasks WHERE status = 'AVAILABLE'");
+            if (rs.next()) {
+                stats.append("Available Tasks: ").append(rs.getInt("count")).append("\n");
+            }
+            
+            // Completed tasks
+            rs = stmt.executeQuery("SELECT COUNT(*) as count FROM tasks WHERE status = 'COMPLETED'");
+            if (rs.next()) {
+                stats.append("Completed Tasks: ").append(rs.getInt("count")).append("\n");
+            }
+            
+            // In progress tasks
+            rs = stmt.executeQuery("SELECT COUNT(*) as count FROM tasks WHERE status IN ('ASSIGNED', 'IN_PROGRESS', 'PENDING_ELDERLY_CONFIRMATION', 'PENDING_VOLUNTEER_CONFIRMATION')");
+            if (rs.next()) {
+                stats.append("In Progress Tasks: ").append(rs.getInt("count")).append("\n");
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Error getting system stats: " + e.getMessage());
+        }
+        
+        return stats.toString();
+    }
 }
