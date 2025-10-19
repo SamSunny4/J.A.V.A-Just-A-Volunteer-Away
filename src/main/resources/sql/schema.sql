@@ -1,11 +1,19 @@
 -- J.A.V.A (Just a Volunteer Away) Database Schema
+-- MySQL Database Setup Script
 
--- Drop tables if they exist to avoid conflicts during initialization
-DROP TABLE IF EXISTS donations;
+-- Create database
+CREATE DATABASE IF NOT EXISTS volunteer_app;
+USE volunteer_app;
+
+-- Create database user (if running this as root)
+CREATE USER IF NOT EXISTS 'volunteer_user'@'localhost' IDENTIFIED BY 'volunteer_pass';
+GRANT ALL PRIVILEGES ON volunteer_app.* TO 'volunteer_user'@'localhost';
+FLUSH PRIVILEGES;
+
+-- Drop tables if they exist (in correct order to avoid foreign key conflicts)
 DROP TABLE IF EXISTS task_history;
 DROP TABLE IF EXISTS user_points;
 DROP TABLE IF EXISTS tasks;
-DROP TABLE IF EXISTS admin_users;
 DROP TABLE IF EXISTS users;
 
 -- Users table
@@ -19,40 +27,24 @@ CREATE TABLE users (
     phone_number VARCHAR(15),
     address TEXT,
     date_of_birth DATE,
-    role VARCHAR(20) NOT NULL, -- 'ELDERLY', 'VOLUNTEER', or 'ADMIN'
+    role VARCHAR(20) NOT NULL, -- 'ELDERLY' or 'VOLUNTEER'
     is_active BOOLEAN DEFAULT TRUE,
     bio TEXT,
-    profile_image VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Admin users table (separate from regular users for enhanced security)
-CREATE TABLE admin_users (
-    admin_id INT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    last_login TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- User points table for gamification and leaderboard
+-- User points table for leaderboard
 CREATE TABLE user_points (
     point_id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
+    user_id INT NOT NULL UNIQUE,
     points INT DEFAULT 0,
     level INT DEFAULT 1,
     user_rank VARCHAR(50) DEFAULT 'Newcomer',
     tasks_completed INT DEFAULT 0,
     tasks_cancelled INT DEFAULT 0,
-    tasks_reassigned INT DEFAULT 0,
     hours_volunteered INT DEFAULT 0,
-    streak_days INT DEFAULT 0,
     last_activity_date DATE,
-    leaderboard_position INT,
-    badges TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
@@ -65,7 +57,7 @@ CREATE TABLE tasks (
     description TEXT NOT NULL,
     requester_id INT NOT NULL,
     volunteer_id INT,
-    status VARCHAR(30) DEFAULT 'AVAILABLE', -- 'PENDING', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'AVAILABLE', 'REASSIGNED'
+    status VARCHAR(30) DEFAULT 'AVAILABLE', -- 'AVAILABLE', 'ASSIGNED', 'COMPLETED', 'CANCELLED'
     location TEXT,
     scheduled_date DATE NOT NULL,
     scheduled_time TIME NOT NULL,
@@ -75,9 +67,9 @@ CREATE TABLE tasks (
     reassignment_reason TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (requester_id) REFERENCES users(user_id),
-    FOREIGN KEY (volunteer_id) REFERENCES users(user_id),
-    FOREIGN KEY (previous_volunteer_id) REFERENCES users(user_id)
+    FOREIGN KEY (requester_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (volunteer_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (previous_volunteer_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
 -- Task history table for tracking changes
@@ -85,7 +77,7 @@ CREATE TABLE task_history (
     history_id INT PRIMARY KEY AUTO_INCREMENT,
     task_id INT NOT NULL,
     changed_by_id INT NOT NULL,
-    changed_by VARCHAR(30),
+    action_type VARCHAR(50), -- 'CREATED', 'ASSIGNED', 'REASSIGNED', 'COMPLETED', 'CANCELLED'
     previous_status VARCHAR(30),
     new_status VARCHAR(30),
     previous_volunteer_id INT,
@@ -93,47 +85,47 @@ CREATE TABLE task_history (
     reassignment_reason TEXT,
     notes TEXT,
     changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (task_id) REFERENCES tasks(task_id),
-    FOREIGN KEY (changed_by_id) REFERENCES users(user_id),
-    FOREIGN KEY (previous_volunteer_id) REFERENCES users(user_id),
-    FOREIGN KEY (new_volunteer_id) REFERENCES users(user_id)
+    FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE CASCADE,
+    FOREIGN KEY (changed_by_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (previous_volunteer_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (new_volunteer_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
--- Donations table
-CREATE TABLE donations (
-    donation_id INT PRIMARY KEY AUTO_INCREMENT,
-    donor_id INT,
-    amount DECIMAL(10, 2) NOT NULL,
-    donation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    payment_method VARCHAR(50) NOT NULL,
-    transaction_id VARCHAR(100) UNIQUE,
-    is_anonymous BOOLEAN DEFAULT FALSE,
-    message TEXT,
-    FOREIGN KEY (donor_id) REFERENCES users(user_id)
-);
+-- Insert sample data for testing
 
--- Insert initial data for testing
-
--- Create an admin user (password: admin123 - will be hashed in the application)
-INSERT INTO users (username, password, email, first_name, last_name, role) 
-VALUES ('admin', '$2a$10$XOPEUldsjJlDaD9UOZ1.sOIlwTPiaq5KRXsnoHr9bKIvTnMaBVLpW', 'admin@java.com', 'Admin', 'User', 'ADMIN');
-
--- Create sample elderly user (password: password - will be hashed in the application)
+-- Sample elderly user (password: password123)
 INSERT INTO users (username, password, email, first_name, last_name, phone_number, role, date_of_birth) 
-VALUES ('elderly1', '$2a$10$XZ2YEW8OolNQvP0JdNYYUOIRS7SxwjV3xXdEfRmiGIVvP3daL0VQS', 'elderly1@example.com', 'John', 'Smith', '555-1234', 'ELDERLY', '1950-05-15');
+VALUES ('john_doe', 'password123', 'john.doe@email.com', 'John', 'Doe', '555-1234', 'ELDERLY', '1950-05-15');
 
--- Create sample volunteer user (password: password - will be hashed in the application)
+-- Sample volunteer users (password: password123)
 INSERT INTO users (username, password, email, first_name, last_name, phone_number, role, date_of_birth) 
-VALUES ('volunteer1', '$2a$10$XZ2YEW8OolNQvP0JdNYYUOIRS7SxwjV3xXdEfRmiGIVvP3daL0VQS', 'volunteer1@example.com', 'Jane', 'Doe', '555-5678', 'VOLUNTEER', '1995-08-22');
+VALUES 
+('jane_smith', 'password123', 'jane.smith@email.com', 'Jane', 'Smith', '555-5678', 'VOLUNTEER', '1995-08-22'),
+('bob_volunteer', 'password123', 'bob.volunteer@email.com', 'Bob', 'Johnson', '555-9999', 'VOLUNTEER', '1992-03-10');
 
--- Create user points for the volunteer
-INSERT INTO user_points (user_id, points, level, user_rank, tasks_completed, hours_volunteered, streak_days)
-VALUES (3, 250, 2, 'Regular Volunteer', 5, 8, 3);
+-- Create user points for volunteers
+INSERT INTO user_points (user_id, points, level, user_rank, tasks_completed, hours_volunteered)
+VALUES 
+(2, 150, 2, 'Helper', 3, 5),
+(3, 250, 3, 'Active Volunteer', 5, 8);
 
--- Create a sample available task
+-- Sample tasks
 INSERT INTO tasks (title, description, requester_id, status, location, scheduled_date, scheduled_time, estimated_duration, urgency_level)
-VALUES ('Help with grocery shopping', 'Need help with weekly grocery shopping. I cannot carry heavy items.', 2, 'AVAILABLE', '123 Main St, Anytown', CURDATE() + INTERVAL 2 DAY, '10:00', 60, 'MEDIUM');
+VALUES 
+('Grocery Shopping', 'Need help with weekly grocery shopping', 1, 'AVAILABLE', '123 Main St', CURDATE() + INTERVAL 2 DAY, '10:00', 60, 'MEDIUM'),
+('Doctor Appointment', 'Need ride to doctor appointment', 1, 'AVAILABLE', '456 Oak Ave', CURDATE() + INTERVAL 3 DAY, '14:00', 90, 'HIGH'),
+('Yard Work', 'Help with mowing the lawn', 1, 'ASSIGNED', '123 Main St', CURDATE() + INTERVAL 5 DAY, '09:00', 120, 'LOW');
 
--- Create a sample assigned task
-INSERT INTO tasks (title, description, requester_id, volunteer_id, status, location, scheduled_date, scheduled_time, estimated_duration, urgency_level)
-VALUES ('Help with yard work', 'Need help with mowing the lawn and trimming bushes.', 2, 3, 'ASSIGNED', '123 Main St, Anytown', CURDATE() + INTERVAL 5 DAY, '14:00', 120, 'LOW');
+-- Assign one task to a volunteer
+UPDATE tasks SET volunteer_id = 2, status = 'ASSIGNED' WHERE task_id = 3;
+
+-- Create indexes for better performance
+CREATE INDEX idx_tasks_status ON tasks(status);
+CREATE INDEX idx_tasks_volunteer ON tasks(volunteer_id);
+CREATE INDEX idx_tasks_requester ON tasks(requester_id);
+CREATE INDEX idx_users_role ON users(role);
+
+-- Display success message
+SELECT 'Database setup completed successfully!' AS Status;
+SELECT 'Sample users created: john_doe (elderly), jane_smith & bob_volunteer (volunteers)' AS Info;
+SELECT 'Default password for all users: password123' AS Credentials;
