@@ -1,4 +1,9 @@
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -312,10 +317,105 @@ public class DatabaseManager {
     }
     
     /**
+     * Volunteer marks task as completed (requires elderly confirmation)
+     */
+    public static boolean volunteerConfirmTask(int taskId, int volunteerId) {
+        // Check current state
+        Task task = getTaskById(taskId);
+        if (task == null || task.getVolunteerId() == null || task.getVolunteerId() != volunteerId) {
+            return false;
+        }
+        
+        // If elderly already confirmed, mark as COMPLETED
+        if (task.isElderlyConfirmed()) {
+            String sql = "UPDATE tasks SET volunteer_confirmed = TRUE, status = 'COMPLETED' WHERE task_id = ? AND volunteer_id = ?";
+            try (Connection conn = getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                
+                stmt.setInt(1, taskId);
+                stmt.setInt(2, volunteerId);
+                
+                int rowsAffected = stmt.executeUpdate();
+                if (rowsAffected > 0) {
+                    updateVolunteerPoints(volunteerId, task.getEstimatedDuration());
+                    return true;
+                }
+            } catch (SQLException e) {
+                System.err.println("Error confirming task: " + e.getMessage());
+            }
+        } else {
+            // Elderly hasn't confirmed yet, set to PENDING_ELDERLY_CONFIRMATION
+            String sql = "UPDATE tasks SET volunteer_confirmed = TRUE, status = 'PENDING_ELDERLY_CONFIRMATION' WHERE task_id = ? AND volunteer_id = ?";
+            try (Connection conn = getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                
+                stmt.setInt(1, taskId);
+                stmt.setInt(2, volunteerId);
+                
+                return stmt.executeUpdate() > 0;
+            } catch (SQLException e) {
+                System.err.println("Error confirming task: " + e.getMessage());
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Elderly confirms task completion (requires volunteer confirmation)
+     */
+    public static boolean elderlyConfirmTask(int taskId, int requesterId) {
+        // Check current state
+        Task task = getTaskById(taskId);
+        if (task == null || task.getRequesterId() != requesterId) {
+            return false;
+        }
+        
+        // Cannot revert if volunteer already confirmed
+        if (task.isVolunteerConfirmed() && task.isElderlyConfirmed()) {
+            return false; // Already fully completed
+        }
+        
+        // If volunteer already confirmed, mark as COMPLETED
+        if (task.isVolunteerConfirmed()) {
+            String sql = "UPDATE tasks SET elderly_confirmed = TRUE, status = 'COMPLETED' WHERE task_id = ? AND requester_id = ?";
+            try (Connection conn = getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                
+                stmt.setInt(1, taskId);
+                stmt.setInt(2, requesterId);
+                
+                int rowsAffected = stmt.executeUpdate();
+                if (rowsAffected > 0 && task.getVolunteerId() != null) {
+                    updateVolunteerPoints(task.getVolunteerId(), task.getEstimatedDuration());
+                    return true;
+                }
+                return rowsAffected > 0;
+            } catch (SQLException e) {
+                System.err.println("Error confirming task: " + e.getMessage());
+            }
+        } else {
+            // Volunteer hasn't confirmed yet, set to PENDING_VOLUNTEER_CONFIRMATION
+            String sql = "UPDATE tasks SET elderly_confirmed = TRUE, status = 'PENDING_VOLUNTEER_CONFIRMATION' WHERE task_id = ? AND requester_id = ?";
+            try (Connection conn = getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                
+                stmt.setInt(1, taskId);
+                stmt.setInt(2, requesterId);
+                
+                return stmt.executeUpdate() > 0;
+            } catch (SQLException e) {
+                System.err.println("Error confirming task: " + e.getMessage());
+            }
+        }
+        return false;
+    }
+    
+    /**
      * Reassign task (remove volunteer, make available again)
      */
     public static boolean reassignTask(int taskId) {
         String sql = "UPDATE tasks SET volunteer_id = NULL, status = 'AVAILABLE', " +
+                     "volunteer_confirmed = FALSE, elderly_confirmed = FALSE, " +
                      "previous_volunteer_id = volunteer_id, " +
                      "reassignment_reason = 'Removed by requester' " +
                      "WHERE task_id = ? AND volunteer_id IS NOT NULL";
@@ -327,6 +427,43 @@ public class DatabaseManager {
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error reassigning task: " + e.getMessage());
+        }
+        return false;
+    }
+    
+    /**
+     * Delete a task (only if it hasn't been assigned or completed)
+     */
+    public static boolean deleteTask(int taskId, int requesterId) {
+        String sql = "DELETE FROM tasks WHERE task_id = ? AND requester_id = ? AND " +
+                     "(status = 'AVAILABLE' OR status = 'CANCELLED')";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, taskId);
+            stmt.setInt(2, requesterId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error deleting task: " + e.getMessage());
+        }
+        return false;
+    }
+    
+    /**
+     * Cancel a task (marks as cancelled instead of deleting)
+     */
+    public static boolean cancelTask(int taskId, int requesterId) {
+        String sql = "UPDATE tasks SET status = 'CANCELLED' WHERE task_id = ? AND requester_id = ?";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, taskId);
+            stmt.setInt(2, requesterId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error cancelling task: " + e.getMessage());
         }
         return false;
     }
@@ -393,7 +530,9 @@ public class DatabaseManager {
             rs.getString("location"),
             rs.getString("scheduled_date"),
             rs.getString("scheduled_time"), 
-            rs.getInt("estimated_duration")
+            rs.getInt("estimated_duration"),
+            rs.getBoolean("volunteer_confirmed"),
+            rs.getBoolean("elderly_confirmed")
         );
     }
     

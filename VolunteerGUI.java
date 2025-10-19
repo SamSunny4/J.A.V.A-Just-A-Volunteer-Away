@@ -1,0 +1,928 @@
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+
+/**
+ * J.A.V.A (Just a Volunteer Away) - GUI Application
+ * A Swing-based volunteer management system
+ */
+public class VolunteerGUI extends JFrame {
+    private User currentUser = null;
+    private CardLayout cardLayout;
+    private JPanel mainPanel;
+    
+    // Panel names
+    private static final String LOGIN_PANEL = "Login";
+    private static final String ELDERLY_PANEL = "Elderly";
+    private static final String VOLUNTEER_PANEL = "Volunteer";
+    
+    public VolunteerGUI() {
+        setTitle("J.A.V.A - Just a Volunteer Away");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(800, 600);
+        setLocationRelativeTo(null);
+        
+        // Test database connection
+        if (!DatabaseManager.testConnection()) {
+            JOptionPane.showMessageDialog(this,
+                "Cannot connect to database!\nPlease check:\n" +
+                "1. MySQL is running\n" +
+                "2. Database 'volunteer_app' exists\n" +
+                "3. User credentials are correct",
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        }
+        
+        // Initialize CardLayout
+        cardLayout = new CardLayout();
+        mainPanel = new JPanel(cardLayout);
+        
+        // Add panels
+        mainPanel.add(createLoginPanel(), LOGIN_PANEL);
+        mainPanel.add(createElderlyPanel(), ELDERLY_PANEL);
+        mainPanel.add(createVolunteerPanel(), VOLUNTEER_PANEL);
+        
+        add(mainPanel);
+        cardLayout.show(mainPanel, LOGIN_PANEL);
+    }
+    
+    // ==================== LOGIN/REGISTRATION PANEL ====================
+    
+    private JPanel createLoginPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // Header
+        JLabel headerLabel = new JLabel("Welcome to J.A.V.A", SwingConstants.CENTER);
+        headerLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        panel.add(headerLabel, BorderLayout.NORTH);
+        
+        // Center panel with login/register
+        JPanel centerPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        // Username
+        gbc.gridx = 0; gbc.gridy = 0;
+        centerPanel.add(new JLabel("Username:"), gbc);
+        gbc.gridx = 1;
+        JTextField usernameField = new JTextField(20);
+        centerPanel.add(usernameField, gbc);
+        
+        // Password
+        gbc.gridx = 0; gbc.gridy = 1;
+        centerPanel.add(new JLabel("Password:"), gbc);
+        gbc.gridx = 1;
+        JPasswordField passwordField = new JPasswordField(20);
+        centerPanel.add(passwordField, gbc);
+        
+        // Buttons
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        
+        JButton loginButton = new JButton("Login");
+        JButton registerButton = new JButton("Register");
+        
+        loginButton.addActionListener(e -> {
+            String username = usernameField.getText().trim();
+            String password = new String(passwordField.getPassword());
+            
+            currentUser = DatabaseManager.loginUser(username, password);
+            
+            if (currentUser != null) {
+                JOptionPane.showMessageDialog(this, "Welcome back, " + currentUser.getFirstName() + "!");
+                if (currentUser.getRole().equals("ELDERLY")) {
+                    refreshElderlyPanel();
+                    cardLayout.show(mainPanel, ELDERLY_PANEL);
+                } else {
+                    refreshVolunteerPanel();
+                    cardLayout.show(mainPanel, VOLUNTEER_PANEL);
+                }
+                usernameField.setText("");
+                passwordField.setText("");
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid username or password!", "Login Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        
+        registerButton.addActionListener(e -> showRegisterDialog());
+        
+        buttonPanel.add(loginButton);
+        buttonPanel.add(registerButton);
+        centerPanel.add(buttonPanel, gbc);
+        
+        panel.add(centerPanel, BorderLayout.CENTER);
+        
+        return panel;
+    }
+    
+    private void showRegisterDialog() {
+        JDialog dialog = new JDialog(this, "Register New User", true);
+        dialog.setSize(400, 450);
+        dialog.setLocationRelativeTo(this);
+        
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        JTextField usernameField = new JTextField(20);
+        JPasswordField passwordField = new JPasswordField(20);
+        JTextField emailField = new JTextField(20);
+        JTextField firstNameField = new JTextField(20);
+        JTextField lastNameField = new JTextField(20);
+        JTextField phoneField = new JTextField(20);
+        JComboBox<String> roleCombo = new JComboBox<>(new String[]{"Elderly (need help)", "Volunteer (provide help)"});
+        
+        int row = 0;
+        gbc.gridx = 0; gbc.gridy = row;
+        panel.add(new JLabel("Username:"), gbc);
+        gbc.gridx = 1;
+        panel.add(usernameField, gbc);
+        
+        row++;
+        gbc.gridx = 0; gbc.gridy = row;
+        panel.add(new JLabel("Password:"), gbc);
+        gbc.gridx = 1;
+        panel.add(passwordField, gbc);
+        
+        row++;
+        gbc.gridx = 0; gbc.gridy = row;
+        panel.add(new JLabel("Email:"), gbc);
+        gbc.gridx = 1;
+        panel.add(emailField, gbc);
+        
+        row++;
+        gbc.gridx = 0; gbc.gridy = row;
+        panel.add(new JLabel("First Name:"), gbc);
+        gbc.gridx = 1;
+        panel.add(firstNameField, gbc);
+        
+        row++;
+        gbc.gridx = 0; gbc.gridy = row;
+        panel.add(new JLabel("Last Name:"), gbc);
+        gbc.gridx = 1;
+        panel.add(lastNameField, gbc);
+        
+        row++;
+        gbc.gridx = 0; gbc.gridy = row;
+        panel.add(new JLabel("Phone:"), gbc);
+        gbc.gridx = 1;
+        panel.add(phoneField, gbc);
+        
+        row++;
+        gbc.gridx = 0; gbc.gridy = row;
+        panel.add(new JLabel("Role:"), gbc);
+        gbc.gridx = 1;
+        panel.add(roleCombo, gbc);
+        
+        row++;
+        gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2;
+        JPanel buttonPanel = new JPanel();
+        JButton submitButton = new JButton("Register");
+        JButton cancelButton = new JButton("Cancel");
+        
+        submitButton.addActionListener(e -> {
+            String role = roleCombo.getSelectedIndex() == 0 ? "ELDERLY" : "VOLUNTEER";
+            User newUser = new User(
+                usernameField.getText().trim(),
+                new String(passwordField.getPassword()),
+                emailField.getText().trim(),
+                firstNameField.getText().trim(),
+                lastNameField.getText().trim(),
+                phoneField.getText().trim(),
+                role
+            );
+            
+            if (DatabaseManager.registerUser(newUser)) {
+                JOptionPane.showMessageDialog(dialog, "Registration successful! You can now log in.");
+                dialog.dispose();
+            } else {
+                JOptionPane.showMessageDialog(dialog, "Registration failed. Username or email might already exist.", 
+                    "Registration Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        
+        cancelButton.addActionListener(e -> dialog.dispose());
+        
+        buttonPanel.add(submitButton);
+        buttonPanel.add(cancelButton);
+        panel.add(buttonPanel, gbc);
+        
+        dialog.add(panel);
+        dialog.setVisible(true);
+    }
+    
+    // ==================== ELDERLY PANEL ====================
+    
+    private JPanel elderlyPanel;
+    private JTextArea elderlyTasksArea;
+    
+    private JPanel createElderlyPanel() {
+        elderlyPanel = new JPanel(new BorderLayout(10, 10));
+        elderlyPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // Header
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        JLabel headerLabel = new JLabel("Elderly User Dashboard", SwingConstants.CENTER);
+        headerLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        headerPanel.add(headerLabel, BorderLayout.CENTER);
+        
+        JButton logoutButton = new JButton("Logout");
+        logoutButton.addActionListener(e -> logout());
+        headerPanel.add(logoutButton, BorderLayout.EAST);
+        
+        elderlyPanel.add(headerPanel, BorderLayout.NORTH);
+        
+        // Center - Task list
+        elderlyTasksArea = new JTextArea();
+        elderlyTasksArea.setEditable(false);
+        elderlyTasksArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        JScrollPane scrollPane = new JScrollPane(elderlyTasksArea);
+        elderlyPanel.add(scrollPane, BorderLayout.CENTER);
+        
+        // Buttons
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        JButton createTaskButton = new JButton("Create New Task");
+        JButton refreshButton = new JButton("Refresh Tasks");
+        JButton confirmCompletionButton = new JButton("Confirm Task Completion");
+        JButton removeVolunteerButton = new JButton("Remove Volunteer");
+        JButton deleteTaskButton = new JButton("Delete Task");
+        
+        createTaskButton.addActionListener(e -> showCreateTaskDialog());
+        refreshButton.addActionListener(e -> refreshElderlyPanel());
+        confirmCompletionButton.addActionListener(e -> showElderlyConfirmDialog());
+        removeVolunteerButton.addActionListener(e -> showRemoveVolunteerDialog());
+        deleteTaskButton.addActionListener(e -> showDeleteTaskDialog());
+        
+        buttonPanel.add(createTaskButton);
+        buttonPanel.add(refreshButton);
+        buttonPanel.add(confirmCompletionButton);
+        buttonPanel.add(removeVolunteerButton);
+        buttonPanel.add(deleteTaskButton);
+        
+        elderlyPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        return elderlyPanel;
+    }
+    
+    private void refreshElderlyPanel() {
+        if (currentUser == null) return;
+        
+        List<Task> tasks = DatabaseManager.getTasksByRequester(currentUser.getUserId());
+        StringBuilder sb = new StringBuilder();
+        sb.append("Your Task Requests:\n");
+        sb.append("=================================================================\n\n");
+        
+        if (tasks.isEmpty()) {
+            sb.append("You haven't created any tasks yet.\n");
+        } else {
+            for (Task task : tasks) {
+                sb.append("ID: ").append(task.getTaskId()).append(" | ").append(task.getTitle()).append("\n");
+                sb.append("   Status: ").append(task.getStatus()).append("\n");
+                sb.append("   Date: ").append(task.getScheduledDate()).append(" at ").append(task.getScheduledTime()).append("\n");
+                sb.append("   Location: ").append(task.getLocation()).append("\n");
+                if (task.getVolunteerId() != null) {
+                    sb.append("   Assigned to Volunteer ID: ").append(task.getVolunteerId()).append("\n");
+                }
+                // Show confirmation status
+                if (task.isVolunteerConfirmed()) {
+                    sb.append("   ✓ Volunteer confirmed completion\n");
+                }
+                if (task.isElderlyConfirmed()) {
+                    sb.append("   ✓ You confirmed completion\n");
+                }
+                if (task.getStatus().equals("PENDING_ELDERLY_CONFIRMATION")) {
+                    sb.append("   ⚠ Awaiting your confirmation!\n");
+                }
+                sb.append("-----------------------------------------------------------------\n");
+            }
+        }
+        
+        elderlyTasksArea.setText(sb.toString());
+    }
+    
+    private void showCreateTaskDialog() {
+        JDialog dialog = new JDialog(this, "Create New Task", true);
+        dialog.setSize(450, 400);
+        dialog.setLocationRelativeTo(this);
+        
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        JTextField titleField = new JTextField(25);
+        JTextArea descArea = new JTextArea(3, 25);
+        JScrollPane descScroll = new JScrollPane(descArea);
+        JTextField locationField = new JTextField(25);
+        JTextField dateField = new JTextField(25);
+        JTextField timeField = new JTextField(25);
+        JTextField durationField = new JTextField(25);
+        
+        int row = 0;
+        gbc.gridx = 0; gbc.gridy = row;
+        panel.add(new JLabel("Title:"), gbc);
+        gbc.gridx = 1;
+        panel.add(titleField, gbc);
+        
+        row++;
+        gbc.gridx = 0; gbc.gridy = row;
+        panel.add(new JLabel("Description:"), gbc);
+        gbc.gridx = 1;
+        panel.add(descScroll, gbc);
+        
+        row++;
+        gbc.gridx = 0; gbc.gridy = row;
+        panel.add(new JLabel("Location:"), gbc);
+        gbc.gridx = 1;
+        panel.add(locationField, gbc);
+        
+        row++;
+        gbc.gridx = 0; gbc.gridy = row;
+        panel.add(new JLabel("Date (YYYY-MM-DD):"), gbc);
+        gbc.gridx = 1;
+        panel.add(dateField, gbc);
+        
+        row++;
+        gbc.gridx = 0; gbc.gridy = row;
+        panel.add(new JLabel("Time (HH:MM):"), gbc);
+        gbc.gridx = 1;
+        panel.add(timeField, gbc);
+        
+        row++;
+        gbc.gridx = 0; gbc.gridy = row;
+        panel.add(new JLabel("Duration (minutes):"), gbc);
+        gbc.gridx = 1;
+        panel.add(durationField, gbc);
+        
+        row++;
+        gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2;
+        JPanel buttonPanel = new JPanel();
+        JButton submitButton = new JButton("Create Task");
+        JButton cancelButton = new JButton("Cancel");
+        
+        submitButton.addActionListener(e -> {
+            try {
+                int duration = Integer.parseInt(durationField.getText().trim());
+                Task task = new Task(
+                    titleField.getText().trim(),
+                    descArea.getText().trim(),
+                    currentUser.getUserId(),
+                    locationField.getText().trim(),
+                    dateField.getText().trim(),
+                    timeField.getText().trim(),
+                    duration
+                );
+                
+                if (DatabaseManager.createTask(task)) {
+                    JOptionPane.showMessageDialog(dialog, "Task created successfully! Task ID: " + task.getTaskId());
+                    refreshElderlyPanel();
+                    dialog.dispose();
+                } else {
+                    JOptionPane.showMessageDialog(dialog, "Failed to create task.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(dialog, "Invalid duration value!", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        
+        cancelButton.addActionListener(e -> dialog.dispose());
+        
+        buttonPanel.add(submitButton);
+        buttonPanel.add(cancelButton);
+        panel.add(buttonPanel, gbc);
+        
+        dialog.add(panel);
+        dialog.setVisible(true);
+    }
+    
+    private void showRemoveVolunteerDialog() {
+        List<Task> tasks = DatabaseManager.getTasksByRequester(currentUser.getUserId());
+        java.util.List<Task> assignedTasks = new java.util.ArrayList<>();
+        
+        for (Task task : tasks) {
+            if (task.getVolunteerId() != null && 
+                (task.getStatus().equals("ASSIGNED") || task.getStatus().equals("IN_PROGRESS"))) {
+                assignedTasks.add(task);
+            }
+        }
+        
+        if (assignedTasks.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "You don't have any tasks with assigned volunteers.");
+            return;
+        }
+        
+        String[] taskOptions = new String[assignedTasks.size()];
+        for (int i = 0; i < assignedTasks.size(); i++) {
+            Task task = assignedTasks.get(i);
+            taskOptions[i] = "ID: " + task.getTaskId() + " - " + task.getTitle() + 
+                           " (Volunteer ID: " + task.getVolunteerId() + ")";
+        }
+        
+        String selected = (String) JOptionPane.showInputDialog(
+            this,
+            "Select task to remove volunteer:",
+            "Remove Volunteer",
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            taskOptions,
+            taskOptions[0]
+        );
+        
+        if (selected != null) {
+            int taskId = Integer.parseInt(selected.split(" ")[1]);
+            if (DatabaseManager.reassignTask(taskId)) {
+                JOptionPane.showMessageDialog(this, "Volunteer removed successfully!");
+                refreshElderlyPanel();
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to remove volunteer.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    
+    private void showElderlyConfirmDialog() {
+        List<Task> tasks = DatabaseManager.getTasksByRequester(currentUser.getUserId());
+        java.util.List<Task> confirmableTasks = new java.util.ArrayList<>();
+        
+        // Filter tasks that can be confirmed
+        for (Task task : tasks) {
+            if (task.getVolunteerId() != null && 
+                !task.getStatus().equals("COMPLETED") && 
+                !task.isElderlyConfirmed()) {
+                confirmableTasks.add(task);
+            }
+        }
+        
+        if (confirmableTasks.isEmpty()) {
+            JOptionPane.showMessageDialog(this, 
+                "No tasks available for confirmation.\n" +
+                "Tasks must be assigned to a volunteer and not yet fully completed.");
+            return;
+        }
+        
+        String[] taskOptions = new String[confirmableTasks.size()];
+        for (int i = 0; i < confirmableTasks.size(); i++) {
+            Task task = confirmableTasks.get(i);
+            String statusInfo = task.getStatus();
+            if (task.isVolunteerConfirmed()) {
+                statusInfo += " [Volunteer confirmed - Awaiting your confirmation]";
+            }
+            taskOptions[i] = "ID: " + task.getTaskId() + " - " + task.getTitle() + 
+                           " (" + statusInfo + ")";
+        }
+        
+        String selected = (String) JOptionPane.showInputDialog(
+            this,
+            "Select task to confirm completion:",
+            "Confirm Task Completion",
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            taskOptions,
+            taskOptions[0]
+        );
+        
+        if (selected != null) {
+            int taskId = Integer.parseInt(selected.split(" ")[1]);
+            
+            // Find the selected task
+            Task selectedTask = null;
+            for (Task task : confirmableTasks) {
+                if (task.getTaskId() == taskId) {
+                    selectedTask = task;
+                    break;
+                }
+            }
+            
+            if (selectedTask == null) return;
+            
+            int confirm = JOptionPane.showConfirmDialog(this,
+                "Confirm that this task has been completed satisfactorily?",
+                "Confirm Completion",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+            
+            if (confirm == JOptionPane.YES_OPTION) {
+                if (DatabaseManager.elderlyConfirmTask(taskId, currentUser.getUserId())) {
+                    String message = "You have confirmed this task as completed!\n";
+                    if (selectedTask.isVolunteerConfirmed()) {
+                        message += "The volunteer has also confirmed. Task is now COMPLETED!";
+                    } else {
+                        message += "Waiting for the volunteer to confirm completion.";
+                    }
+                    JOptionPane.showMessageDialog(this, message);
+                    refreshElderlyPanel();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Failed to confirm task completion.", 
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }
+    }
+    
+    private void showDeleteTaskDialog() {
+        List<Task> tasks = DatabaseManager.getTasksByRequester(currentUser.getUserId());
+        java.util.List<Task> deletableTasks = new java.util.ArrayList<>();
+        
+        // Only allow deleting tasks that are AVAILABLE or CANCELLED
+        for (Task task : tasks) {
+            if (task.getStatus().equals("AVAILABLE") || task.getStatus().equals("CANCELLED")) {
+                deletableTasks.add(task);
+            }
+        }
+        
+        if (deletableTasks.isEmpty()) {
+            JOptionPane.showMessageDialog(this, 
+                "You don't have any tasks available for deletion.\n" +
+                "Only AVAILABLE or CANCELLED tasks can be deleted.");
+            return;
+        }
+        
+        String[] taskOptions = new String[deletableTasks.size()];
+        for (int i = 0; i < deletableTasks.size(); i++) {
+            Task task = deletableTasks.get(i);
+            taskOptions[i] = "ID: " + task.getTaskId() + " - " + task.getTitle() + 
+                           " (Status: " + task.getStatus() + ")";
+        }
+        
+        String selected = (String) JOptionPane.showInputDialog(
+            this,
+            "Select task to delete permanently:",
+            "Delete Task",
+            JOptionPane.WARNING_MESSAGE,
+            null,
+            taskOptions,
+            taskOptions[0]
+        );
+        
+        if (selected != null) {
+            int taskId = Integer.parseInt(selected.split(" ")[1]);
+            
+            int confirm = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to delete this task?\nThis action cannot be undone!",
+                "Confirm Deletion",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+            
+            if (confirm == JOptionPane.YES_OPTION) {
+                if (DatabaseManager.deleteTask(taskId, currentUser.getUserId())) {
+                    JOptionPane.showMessageDialog(this, "Task deleted successfully!");
+                    refreshElderlyPanel();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Failed to delete task.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }
+    }
+    
+    // ==================== VOLUNTEER PANEL ====================
+    
+    private JPanel volunteerPanel;
+    private JTextArea volunteerTasksArea;
+    private JLabel statsLabel;
+    
+    private JPanel createVolunteerPanel() {
+        volunteerPanel = new JPanel(new BorderLayout(10, 10));
+        volunteerPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // Header with stats
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        JLabel headerLabel = new JLabel("Volunteer Dashboard", SwingConstants.CENTER);
+        headerLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        headerPanel.add(headerLabel, BorderLayout.CENTER);
+        
+        JPanel topRightPanel = new JPanel(new BorderLayout());
+        statsLabel = new JLabel("", SwingConstants.RIGHT);
+        JButton logoutButton = new JButton("Logout");
+        logoutButton.addActionListener(e -> logout());
+        topRightPanel.add(statsLabel, BorderLayout.CENTER);
+        topRightPanel.add(logoutButton, BorderLayout.SOUTH);
+        headerPanel.add(topRightPanel, BorderLayout.EAST);
+        
+        volunteerPanel.add(headerPanel, BorderLayout.NORTH);
+        
+        // Center - Task list
+        volunteerTasksArea = new JTextArea();
+        volunteerTasksArea.setEditable(false);
+        volunteerTasksArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        JScrollPane scrollPane = new JScrollPane(volunteerTasksArea);
+        volunteerPanel.add(scrollPane, BorderLayout.CENTER);
+        
+        // Buttons
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        JButton availableTasksButton = new JButton("View Available Tasks");
+        JButton acceptTaskButton = new JButton("Accept Task");
+        JButton myTasksButton = new JButton("My Assigned Tasks");
+        JButton updateStatusButton = new JButton("Update Task Status");
+        JButton leaderboardButton = new JButton("Leaderboard");
+        
+        availableTasksButton.addActionListener(e -> showAvailableTasks());
+        acceptTaskButton.addActionListener(e -> showAcceptTaskDialog());
+        myTasksButton.addActionListener(e -> showMyAssignedTasks());
+        updateStatusButton.addActionListener(e -> showUpdateStatusDialog());
+        leaderboardButton.addActionListener(e -> showLeaderboard());
+        
+        buttonPanel.add(availableTasksButton);
+        buttonPanel.add(acceptTaskButton);
+        buttonPanel.add(myTasksButton);
+        buttonPanel.add(updateStatusButton);
+        buttonPanel.add(leaderboardButton);
+        
+        volunteerPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        return volunteerPanel;
+    }
+    
+    private void refreshVolunteerPanel() {
+        if (currentUser == null) return;
+        
+        // Update stats
+        statsLabel.setText("<html>Points: " + currentUser.getPoints() + 
+                          "<br>Tasks Completed: " + currentUser.getTasksCompleted() + "</html>");
+        
+        // Show assigned tasks by default
+        showMyAssignedTasks();
+    }
+    
+    private void showAvailableTasks() {
+        List<Task> tasks = DatabaseManager.getAvailableTasks();
+        StringBuilder sb = new StringBuilder();
+        sb.append("Available Tasks:\n");
+        sb.append("=================================================================\n\n");
+        
+        if (tasks.isEmpty()) {
+            sb.append("No available tasks at the moment.\n");
+        } else {
+            for (Task task : tasks) {
+                sb.append("ID: ").append(task.getTaskId()).append(" | ").append(task.getTitle()).append("\n");
+                sb.append("   Description: ").append(task.getDescription()).append("\n");
+                sb.append("   Date: ").append(task.getScheduledDate()).append(" at ").append(task.getScheduledTime()).append("\n");
+                sb.append("   Duration: ").append(task.getEstimatedDuration()).append(" minutes\n");
+                sb.append("   Location: ").append(task.getLocation()).append("\n");
+                sb.append("-----------------------------------------------------------------\n");
+            }
+        }
+        
+        volunteerTasksArea.setText(sb.toString());
+    }
+    
+    private void showAcceptTaskDialog() {
+        List<Task> tasks = DatabaseManager.getAvailableTasks();
+        
+        if (tasks.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No available tasks at the moment.");
+            return;
+        }
+        
+        String[] taskOptions = new String[tasks.size()];
+        for (int i = 0; i < tasks.size(); i++) {
+            Task task = tasks.get(i);
+            taskOptions[i] = "ID: " + task.getTaskId() + " - " + task.getTitle() + 
+                           " (" + task.getScheduledDate() + " at " + task.getScheduledTime() + ")";
+        }
+        
+        String selected = (String) JOptionPane.showInputDialog(
+            this,
+            "Select task to accept:",
+            "Accept Task",
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            taskOptions,
+            taskOptions[0]
+        );
+        
+        if (selected != null) {
+            int taskId = Integer.parseInt(selected.split(" ")[1]);
+            if (DatabaseManager.assignTask(taskId, currentUser.getUserId())) {
+                JOptionPane.showMessageDialog(this, "Task accepted successfully!");
+                showMyAssignedTasks();
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to accept task. It may have been already assigned.", 
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    
+    private void showMyAssignedTasks() {
+        List<Task> tasks = DatabaseManager.getTasksByVolunteer(currentUser.getUserId());
+        StringBuilder sb = new StringBuilder();
+        sb.append("My Assigned Tasks:\n");
+        sb.append("=================================================================\n\n");
+        
+        if (tasks.isEmpty()) {
+            sb.append("You don't have any assigned tasks yet.\n");
+        } else {
+            for (Task task : tasks) {
+                sb.append("ID: ").append(task.getTaskId()).append(" | ").append(task.getTitle()).append("\n");
+                sb.append("   Status: ").append(task.getStatus()).append("\n");
+                sb.append("   Date: ").append(task.getScheduledDate()).append(" at ").append(task.getScheduledTime()).append("\n");
+                sb.append("   Duration: ").append(task.getEstimatedDuration()).append(" minutes\n");
+                sb.append("   Location: ").append(task.getLocation()).append("\n");
+                // Show confirmation status
+                if (task.isVolunteerConfirmed()) {
+                    sb.append("   ✓ You confirmed completion\n");
+                }
+                if (task.isElderlyConfirmed()) {
+                    sb.append("   ✓ Elderly confirmed completion\n");
+                }
+                if (task.getStatus().equals("PENDING_VOLUNTEER_CONFIRMATION")) {
+                    sb.append("   ⚠ Awaiting your confirmation!\n");
+                }
+                sb.append("-----------------------------------------------------------------\n");
+            }
+        }
+        
+        volunteerTasksArea.setText(sb.toString());
+    }
+    
+    private void showUpdateStatusDialog() {
+        List<Task> tasks = DatabaseManager.getTasksByVolunteer(currentUser.getUserId());
+        
+        if (tasks.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "You don't have any assigned tasks.");
+            return;
+        }
+        
+        // Filter tasks that can be updated
+        List<Task> updatableTasks = new java.util.ArrayList<>();
+        for (Task task : tasks) {
+            if (!task.getStatus().equals("COMPLETED") && !task.isElderlyConfirmed()) {
+                updatableTasks.add(task);
+            }
+        }
+        
+        if (updatableTasks.isEmpty()) {
+            JOptionPane.showMessageDialog(this, 
+                "No tasks available to update.\n" +
+                "Tasks confirmed by the elderly cannot be reverted.");
+            return;
+        }
+        
+        String[] taskOptions = new String[updatableTasks.size()];
+        for (int i = 0; i < updatableTasks.size(); i++) {
+            Task task = updatableTasks.get(i);
+            String statusInfo = task.getStatus();
+            if (task.isVolunteerConfirmed()) {
+                statusInfo += " [You confirmed - Awaiting elderly]";
+            }
+            taskOptions[i] = "ID: " + task.getTaskId() + " - " + task.getTitle() + 
+                           " (" + statusInfo + ")";
+        }
+        
+        String selected = (String) JOptionPane.showInputDialog(
+            this,
+            "Select task to update:",
+            "Update Task Status",
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            taskOptions,
+            taskOptions[0]
+        );
+        
+        if (selected != null) {
+            int taskId = Integer.parseInt(selected.split(" ")[1]);
+            
+            // Find the selected task
+            Task selectedTask = null;
+            for (Task task : updatableTasks) {
+                if (task.getTaskId() == taskId) {
+                    selectedTask = task;
+                    break;
+                }
+            }
+            
+            if (selectedTask == null) return;
+            
+            // Build status options based on current state
+            java.util.List<String> statusList = new java.util.ArrayList<>();
+            if (!selectedTask.getStatus().equals("IN_PROGRESS")) {
+                statusList.add("IN_PROGRESS");
+            }
+            if (!selectedTask.isVolunteerConfirmed()) {
+                statusList.add("MARK AS COMPLETED");
+            }
+            
+            if (statusList.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Task is already confirmed and cannot be changed.");
+                return;
+            }
+            
+            String[] statusOptions = statusList.toArray(new String[0]);
+            String status = (String) JOptionPane.showInputDialog(
+                this,
+                "Select new status:",
+                "Update Status",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                statusOptions,
+                statusOptions[0]
+            );
+            
+            if (status != null) {
+                if (status.equals("MARK AS COMPLETED")) {
+                    if (DatabaseManager.volunteerConfirmTask(taskId, currentUser.getUserId())) {
+                        String message = "You have marked this task as completed!\n";
+                        if (selectedTask.isElderlyConfirmed()) {
+                            message += "The elderly has also confirmed. Task is now COMPLETED!\nPoints have been added to your account!";
+                        } else {
+                            message += "Waiting for the elderly to confirm completion.";
+                        }
+                        JOptionPane.showMessageDialog(this, message);
+                        refreshVolunteerPanel();
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Failed to confirm task completion.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                } else if (status.equals("IN_PROGRESS")) {
+                    if (DatabaseManager.updateTaskStatus(taskId, "IN_PROGRESS")) {
+                        JOptionPane.showMessageDialog(this, "Task status updated to IN_PROGRESS!");
+                        refreshVolunteerPanel();
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Failed to update task status.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        }
+    }
+    
+    private void showLeaderboard() {
+        List<User> leaderboard = DatabaseManager.getLeaderboard(10);
+        
+        JDialog dialog = new JDialog(this, "Volunteer Leaderboard", true);
+        dialog.setSize(500, 400);
+        dialog.setLocationRelativeTo(this);
+        
+        String[] columnNames = {"Rank", "Name", "Points", "Tasks Completed"};
+        Object[][] data = new Object[leaderboard.size()][4];
+        
+        for (int i = 0; i < leaderboard.size(); i++) {
+            User user = leaderboard.get(i);
+            data[i][0] = i + 1;
+            data[i][1] = user.getFirstName() + " " + user.getLastName();
+            data[i][2] = user.getPoints();
+            data[i][3] = user.getTasksCompleted();
+        }
+        
+        JTable table = new JTable(data, columnNames);
+        table.setEnabled(false);
+        JScrollPane scrollPane = new JScrollPane(table);
+        
+        JButton closeButton = new JButton("Close");
+        closeButton.addActionListener(e -> dialog.dispose());
+        
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(closeButton);
+        
+        dialog.add(scrollPane, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.setVisible(true);
+    }
+    
+    // ==================== UTILITY METHODS ====================
+    
+    private void logout() {
+        currentUser = null;
+        cardLayout.show(mainPanel, LOGIN_PANEL);
+        JOptionPane.showMessageDialog(this, "Logged out successfully!");
+    }
+    
+    // ==================== MAIN ====================
+    
+    public static void main(String[] args) {
+        try {
+            // Set system look and feel
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        SwingUtilities.invokeLater(() -> {
+            VolunteerGUI gui = new VolunteerGUI();
+            gui.setVisible(true);
+        });
+    }
+}

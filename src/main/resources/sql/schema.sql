@@ -57,12 +57,14 @@ CREATE TABLE tasks (
     description TEXT NOT NULL,
     requester_id INT NOT NULL,
     volunteer_id INT,
-    status VARCHAR(30) DEFAULT 'AVAILABLE', -- 'AVAILABLE', 'ASSIGNED', 'COMPLETED', 'CANCELLED'
+    status VARCHAR(30) DEFAULT 'AVAILABLE', -- 'AVAILABLE', 'ASSIGNED', 'IN_PROGRESS', 'PENDING_ELDERLY_CONFIRMATION', 'PENDING_VOLUNTEER_CONFIRMATION', 'COMPLETED', 'CANCELLED'
     location TEXT,
     scheduled_date DATE NOT NULL,
     scheduled_time TIME NOT NULL,
     estimated_duration INT NOT NULL, -- in minutes
     urgency_level VARCHAR(10) DEFAULT 'MEDIUM', -- 'LOW', 'MEDIUM', 'HIGH'
+    volunteer_confirmed BOOLEAN DEFAULT FALSE, -- Volunteer marked task as completed
+    elderly_confirmed BOOLEAN DEFAULT FALSE, -- Elderly marked task as completed
     previous_volunteer_id INT,
     reassignment_reason TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

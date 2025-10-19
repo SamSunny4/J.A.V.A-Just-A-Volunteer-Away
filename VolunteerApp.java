@@ -130,7 +130,8 @@ public class VolunteerApp {
         System.out.println("\n1. Create New Task Request");
         System.out.println("2. View My Task Requests");
         System.out.println("3. Remove Volunteer from Task");
-        System.out.println("4. Logout");
+        System.out.println("4. Delete Task");
+        System.out.println("5. Logout");
         System.out.print("Choose an option: ");
         
         int choice = getIntInput();
@@ -146,6 +147,9 @@ public class VolunteerApp {
                 reassignTask();
                 break;
             case 4:
+                deleteTask();
+                break;
+            case 5:
                 logout();
                 break;
             default:
@@ -196,7 +200,7 @@ public class VolunteerApp {
         }
         
         System.out.println("\nYour tasks:");
-        System.out.println("─────────────────────────────────────────────────────────────────");
+        System.out.println("-----------------------------------------------------------------");
         for (Task task : tasks) {
             System.out.println("ID: " + task.getTaskId() + " | " + task.getTitle());
             System.out.println("   Status: " + task.getStatus() + " | Date: " + task.getScheduledDate() + 
@@ -205,7 +209,7 @@ public class VolunteerApp {
             if (task.getVolunteerId() != null) {
                 System.out.println("   Assigned to Volunteer ID: " + task.getVolunteerId());
             }
-            System.out.println("─────────────────────────────────────────────────────────────────");
+            System.out.println("-----------------------------------------------------------------");
         }
     }
     
@@ -246,6 +250,52 @@ public class VolunteerApp {
             System.out.println("Task is now available for other volunteers.");
         } else {
             System.out.println("\nFailed to remove volunteer. Please check the task ID.");
+        }
+    }
+    
+    private static void deleteTask() {
+        System.out.println("\n--- Delete Task ---");
+        
+        List<Task> tasks = DatabaseManager.getTasksByRequester(currentUser.getUserId());
+        List<Task> deletableTasks = new java.util.ArrayList<>();
+        
+        // Filter for tasks that can be deleted (AVAILABLE or CANCELLED)
+        for (Task task : tasks) {
+            if (task.getStatus().equals("AVAILABLE") || task.getStatus().equals("CANCELLED")) {
+                deletableTasks.add(task);
+            }
+        }
+        
+        if (deletableTasks.isEmpty()) {
+            System.out.println("You don't have any tasks available for deletion.");
+            System.out.println("Only AVAILABLE or CANCELLED tasks can be deleted.");
+            return;
+        }
+        
+        System.out.println("\nTasks available for deletion:");
+        for (Task task : deletableTasks) {
+            System.out.println(task.getTaskId() + ". " + task.getTitle() + 
+                             " (Status: " + task.getStatus() + ")");
+        }
+        
+        System.out.print("\nEnter Task ID to delete (0 to cancel): ");
+        int taskId = getIntInput();
+        
+        if (taskId == 0) {
+            return;
+        }
+        
+        System.out.print("Are you sure you want to delete this task? (yes/no): ");
+        String confirm = scanner.nextLine().trim().toLowerCase();
+        
+        if (confirm.equals("yes") || confirm.equals("y")) {
+            if (DatabaseManager.deleteTask(taskId, currentUser.getUserId())) {
+                System.out.println("\nTask deleted successfully!");
+            } else {
+                System.out.println("\nFailed to delete task. Please check the task ID.");
+            }
+        } else {
+            System.out.println("\nTask deletion cancelled.");
         }
     }
     
@@ -297,14 +347,14 @@ public class VolunteerApp {
         }
         
         System.out.println("\nAvailable tasks:");
-        System.out.println("─────────────────────────────────────────────────────────────────");
+        System.out.println("-----------------------------------------------------------------");
         for (Task task : tasks) {
             System.out.println("ID: " + task.getTaskId() + " | " + task.getTitle());
             System.out.println("   Description: " + task.getDescription());
             System.out.println("   Date: " + task.getScheduledDate() + " at " + task.getScheduledTime());
             System.out.println("   Duration: " + task.getEstimatedDuration() + " minutes");
             System.out.println("   Location: " + task.getLocation());
-            System.out.println("─────────────────────────────────────────────────────────────────");
+            System.out.println("-----------------------------------------------------------------");
         }
         
         System.out.print("\nEnter Task ID to accept (0 to cancel): ");
@@ -333,14 +383,14 @@ public class VolunteerApp {
         }
         
         System.out.println("\nYour tasks:");
-        System.out.println("─────────────────────────────────────────────────────────────────");
+        System.out.println("-----------------------------------------------------------------");
         for (Task task : tasks) {
             System.out.println("ID: " + task.getTaskId() + " | " + task.getTitle());
             System.out.println("   Status: " + task.getStatus());
             System.out.println("   Date: " + task.getScheduledDate() + " at " + task.getScheduledTime());
             System.out.println("   Duration: " + task.getEstimatedDuration() + " minutes");
             System.out.println("   Location: " + task.getLocation());
-            System.out.println("─────────────────────────────────────────────────────────────────");
+            System.out.println("-----------------------------------------------------------------");
         }
     }
     

@@ -7,11 +7,13 @@ public class Task {
     private String description;
     private int requesterId; // Elderly user who created the task
     private Integer volunteerId; // Volunteer assigned (null if not assigned)
-    private String status; // "AVAILABLE", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"
+    private String status; // "AVAILABLE", "ASSIGNED", "IN_PROGRESS", "PENDING_ELDERLY_CONFIRMATION", "PENDING_VOLUNTEER_CONFIRMATION", "COMPLETED", "CANCELLED"
     private String location;
     private String scheduledDate; // Format: YYYY-MM-DD
     private String scheduledTime; // Format: HH:MM 
     private int estimatedDuration; // in minutes
+    private boolean volunteerConfirmed; // Volunteer marked as completed
+    private boolean elderlyConfirmed; // Elderly marked as completed
     
     // Constructor for new tasks
     public Task(String title, String description, int requesterId, String location, 
@@ -25,12 +27,15 @@ public class Task {
         this.estimatedDuration = estimatedDuration;
         this.status = "AVAILABLE";
         this.volunteerId = null;
+        this.volunteerConfirmed = false;
+        this.elderlyConfirmed = false;
     }
     
     // Constructor for existing tasks (from database)
     public Task(int taskId, String title, String description, int requesterId, 
                 Integer volunteerId, String status, String location, 
-                String scheduledDate, String scheduledTime, int estimatedDuration) {
+                String scheduledDate, String scheduledTime, int estimatedDuration,
+                boolean volunteerConfirmed, boolean elderlyConfirmed) {
         this.taskId = taskId;
         this.title = title;
         this.description = description;
@@ -41,6 +46,8 @@ public class Task {
         this.scheduledDate = scheduledDate;
         this.scheduledTime = scheduledTime;
         this.estimatedDuration = estimatedDuration;
+        this.volunteerConfirmed = volunteerConfirmed;
+        this.elderlyConfirmed = elderlyConfirmed;
     }
     
     // Getters
@@ -54,6 +61,8 @@ public class Task {
     public String getScheduledDate() { return scheduledDate; }
     public String getScheduledTime() { return scheduledTime; }
     public int getEstimatedDuration() { return estimatedDuration; }
+    public boolean isVolunteerConfirmed() { return volunteerConfirmed; }
+    public boolean isElderlyConfirmed() { return elderlyConfirmed; }
     
     // Setters
     public void setTaskId(int taskId) { this.taskId = taskId; }
@@ -61,6 +70,8 @@ public class Task {
     public void setStatus(String status) { this.status = status; }
     public void setTitle(String title) { this.title = title; }
     public void setDescription(String description) { this.description = description; }
+    public void setVolunteerConfirmed(boolean volunteerConfirmed) { this.volunteerConfirmed = volunteerConfirmed; }
+    public void setElderlyConfirmed(boolean elderlyConfirmed) { this.elderlyConfirmed = elderlyConfirmed; }
     
     @Override
     public String toString() {
