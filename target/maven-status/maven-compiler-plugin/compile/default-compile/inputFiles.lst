@@ -1,36 +1,17 @@
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\service\impl\UserPointsServiceImpl.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\service\impl\TaskServiceImpl.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\ui\ManageVolunteersScreen.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\dao\TaskHistoryDao.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\dao\TaskDao.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\dao\impl\UserDaoImpl.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\dao\impl\UserPointsDaoImpl.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\ui\AvailableTasksScreen.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\service\mock\MockTaskService.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\model\Donation.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\config\DatabaseManager.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\service\mock\MockUserPointsService.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\service\UserService.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\dao\BaseDao.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\ui\MyTasksScreen.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\service\mock\MockUserService.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\ui\LeaderboardScreen.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\VolunteerApp.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\model\UserRole.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\ui\ProfileScreen.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\ui\CreateTaskScreen.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\model\Task.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\model\TaskHistory.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\ui\BaseScreen.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\ui\MainMenuScreen.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\model\User.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\service\UserPointsService.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\db\DatabaseManager.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\dao\impl\TaskDaoImpl.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\ui\LoginScreen.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\service\impl\UserServiceImpl.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\dao\UserDao.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\dao\UserPointsDao.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\model\UserPoints.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\service\TaskService.java
-E:\GitHub\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\ui\MyAssignedTasksScreen.java
+C:\Users\samsu\Desktop\New folder\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\util\DatabaseConnection.java
+C:\Users\samsu\Desktop\New folder\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\model\UrgencyLevel.java
+C:\Users\samsu\Desktop\New folder\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\service\TaskService.java
+C:\Users\samsu\Desktop\New folder\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\service\impl\UserServiceImpl.java
+C:\Users\samsu\Desktop\New folder\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\service\impl\TaskServiceImpl.java
+C:\Users\samsu\Desktop\New folder\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\service\UserService.java
+C:\Users\samsu\Desktop\New folder\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\model\User.java
+C:\Users\samsu\Desktop\New folder\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\dao\impl\UserDaoImpl.java
+C:\Users\samsu\Desktop\New folder\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\model\Role.java
+C:\Users\samsu\Desktop\New folder\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\dao\BaseDao.java
+C:\Users\samsu\Desktop\New folder\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\ui\ConsoleUI.java
+C:\Users\samsu\Desktop\New folder\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\dao\impl\TaskDaoImpl.java
+C:\Users\samsu\Desktop\New folder\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\dao\TaskDao.java
+C:\Users\samsu\Desktop\New folder\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\model\TaskStatus.java
+C:\Users\samsu\Desktop\New folder\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\VolunteerApp.java
+C:\Users\samsu\Desktop\New folder\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\dao\UserDao.java
+C:\Users\samsu\Desktop\New folder\J.A.V.A-Just-A-Volunteer-Away\src\main\java\com\java\volunteer\model\Task.java

@@ -7,13 +7,6 @@ DROP TABLE IF EXISTS user_points;
 DROP TABLE IF EXISTS tasks;
 DROP TABLE IF EXISTS admin_users;
 DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS user_roles;
-
--- User roles table
-CREATE TABLE user_roles (
-    role_id INT PRIMARY KEY AUTO_INCREMENT,
-    role_name VARCHAR(50) NOT NULL UNIQUE
-);
 
 -- Users table
 CREATE TABLE users (
@@ -26,13 +19,12 @@ CREATE TABLE users (
     phone_number VARCHAR(15),
     address TEXT,
     date_of_birth DATE,
-    role_id INT NOT NULL,
+    role VARCHAR(20) NOT NULL, -- 'ELDERLY', 'VOLUNTEER', or 'ADMIN'
     is_active BOOLEAN DEFAULT TRUE,
     bio TEXT,
     profile_image VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (role_id) REFERENCES user_roles(role_id)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- Admin users table (separate from regular users for enhanced security)
@@ -52,7 +44,7 @@ CREATE TABLE user_points (
     user_id INT NOT NULL,
     points INT DEFAULT 0,
     level INT DEFAULT 1,
-    rank VARCHAR(50) DEFAULT 'Newcomer',
+    user_rank VARCHAR(50) DEFAULT 'Newcomer',
     tasks_completed INT DEFAULT 0,
     tasks_cancelled INT DEFAULT 0,
     tasks_reassigned INT DEFAULT 0,
@@ -73,12 +65,12 @@ CREATE TABLE tasks (
     description TEXT NOT NULL,
     requester_id INT NOT NULL,
     volunteer_id INT,
-    status ENUM('PENDING', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'AVAILABLE', 'REASSIGNED') DEFAULT 'AVAILABLE',
+    status VARCHAR(30) DEFAULT 'AVAILABLE', -- 'PENDING', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'AVAILABLE', 'REASSIGNED'
     location TEXT,
     scheduled_date DATE NOT NULL,
     scheduled_time TIME NOT NULL,
     estimated_duration INT NOT NULL, -- in minutes
-    urgency_level ENUM('LOW', 'MEDIUM', 'HIGH') DEFAULT 'MEDIUM',
+    urgency_level VARCHAR(10) DEFAULT 'MEDIUM', -- 'LOW', 'MEDIUM', 'HIGH'
     previous_volunteer_id INT,
     reassignment_reason TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -93,9 +85,9 @@ CREATE TABLE task_history (
     history_id INT PRIMARY KEY AUTO_INCREMENT,
     task_id INT NOT NULL,
     changed_by_id INT NOT NULL,
-    changed_by ENUM('VOLUNTEER', 'ELDERLY', 'ADMIN'),
-    previous_status ENUM('PENDING', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'AVAILABLE', 'REASSIGNED'),
-    new_status ENUM('PENDING', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'AVAILABLE', 'REASSIGNED'),
+    changed_by VARCHAR(30),
+    previous_status VARCHAR(30),
+    new_status VARCHAR(30),
     previous_volunteer_id INT,
     new_volunteer_id INT,
     reassignment_reason TEXT,
@@ -120,12 +112,28 @@ CREATE TABLE donations (
     FOREIGN KEY (donor_id) REFERENCES users(user_id)
 );
 
--- Insert initial roles
-INSERT INTO user_roles (role_name) VALUES 
-('ADMIN'),
-('ELDERLY'),
-('VOLUNTEER');
+-- Insert initial data for testing
 
--- Create an admin user (password: admin123)
-INSERT INTO users (username, password, email, first_name, last_name, role_id) 
-VALUES ('admin', 'hashed_password_here', 'admin@java.com', 'Admin', 'User', 1);
+-- Create an admin user (password: admin123 - will be hashed in the application)
+INSERT INTO users (username, password, email, first_name, last_name, role) 
+VALUES ('admin', '$2a$10$XOPEUldsjJlDaD9UOZ1.sOIlwTPiaq5KRXsnoHr9bKIvTnMaBVLpW', 'admin@java.com', 'Admin', 'User', 'ADMIN');
+
+-- Create sample elderly user (password: password - will be hashed in the application)
+INSERT INTO users (username, password, email, first_name, last_name, phone_number, role, date_of_birth) 
+VALUES ('elderly1', '$2a$10$XZ2YEW8OolNQvP0JdNYYUOIRS7SxwjV3xXdEfRmiGIVvP3daL0VQS', 'elderly1@example.com', 'John', 'Smith', '555-1234', 'ELDERLY', '1950-05-15');
+
+-- Create sample volunteer user (password: password - will be hashed in the application)
+INSERT INTO users (username, password, email, first_name, last_name, phone_number, role, date_of_birth) 
+VALUES ('volunteer1', '$2a$10$XZ2YEW8OolNQvP0JdNYYUOIRS7SxwjV3xXdEfRmiGIVvP3daL0VQS', 'volunteer1@example.com', 'Jane', 'Doe', '555-5678', 'VOLUNTEER', '1995-08-22');
+
+-- Create user points for the volunteer
+INSERT INTO user_points (user_id, points, level, user_rank, tasks_completed, hours_volunteered, streak_days)
+VALUES (3, 250, 2, 'Regular Volunteer', 5, 8, 3);
+
+-- Create a sample available task
+INSERT INTO tasks (title, description, requester_id, status, location, scheduled_date, scheduled_time, estimated_duration, urgency_level)
+VALUES ('Help with grocery shopping', 'Need help with weekly grocery shopping. I cannot carry heavy items.', 2, 'AVAILABLE', '123 Main St, Anytown', CURDATE() + INTERVAL 2 DAY, '10:00', 60, 'MEDIUM');
+
+-- Create a sample assigned task
+INSERT INTO tasks (title, description, requester_id, volunteer_id, status, location, scheduled_date, scheduled_time, estimated_duration, urgency_level)
+VALUES ('Help with yard work', 'Need help with mowing the lawn and trimming bushes.', 2, 3, 'ASSIGNED', '123 Main St, Anytown', CURDATE() + INTERVAL 5 DAY, '14:00', 120, 'LOW');

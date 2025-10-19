@@ -1,45 +1,57 @@
 package com.java.volunteer.dao;
 
+import java.sql.SQLException;
 import java.util.List;
-import java.util.Optional;
 
 /**
- * Base DAO interface for CRUD operations
- * @param <T> entity type
- * @param <ID> primary key type
+ * Generic DAO interface with basic CRUD operations
+ * 
+ * @param <T> the entity type
+ * @param <ID> the primary key type
  */
 public interface BaseDao<T, ID> {
+    
     /**
-     * Create a new entity
-     * @param entity the entity to create
-     * @return the created entity with ID assigned
+     * Save an entity to the database
+     * 
+     * @param entity the entity to save
+     * @return the saved entity with its ID
+     * @throws SQLException if a database error occurs
      */
-    T create(T entity);
+    T save(T entity) throws SQLException;
     
     /**
      * Find an entity by its ID
+     * 
      * @param id the entity ID
-     * @return an Optional containing the entity if found, or empty if not found
+     * @return the entity or null if not found
+     * @throws SQLException if a database error occurs
      */
-    Optional<T> findById(ID id);
+    T findById(ID id) throws SQLException;
     
     /**
      * Find all entities
+     * 
      * @return a list of all entities
+     * @throws SQLException if a database error occurs
      */
-    List<T> findAll();
+    List<T> findAll() throws SQLException;
     
     /**
      * Update an existing entity
+     * 
      * @param entity the entity to update
      * @return the updated entity
+     * @throws SQLException if a database error occurs
      */
-    T update(T entity);
+    T update(T entity) throws SQLException;
     
     /**
-     * Delete an entity by ID
-     * @param id the entity ID to delete
+     * Delete an entity by its ID
+     * 
+     * @param id the entity ID
      * @return true if the entity was deleted, false otherwise
+     * @throws SQLException if a database error occurs
      */
-    boolean deleteById(ID id);
+    boolean deleteById(ID id) throws SQLException;
 }

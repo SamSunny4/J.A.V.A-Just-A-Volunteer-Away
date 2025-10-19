@@ -1,348 +1,291 @@
 package com.java.volunteer.service.impl;
 
+import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
-import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.java.volunteer.dao.TaskDao;
-import com.java.volunteer.dao.TaskHistoryDao;
 import com.java.volunteer.dao.UserDao;
-import com.java.volunteer.dao.UserPointsDao;
+import com.java.volunteer.dao.impl.TaskDaoImpl;
+import com.java.volunteer.dao.impl.UserDaoImpl;
 import com.java.volunteer.model.Task;
-import com.java.volunteer.model.TaskHistory;
 import com.java.volunteer.model.User;
 import com.java.volunteer.service.TaskService;
 
 /**
- * Implementation of TaskService
+ * Implementation of the TaskService interface
  */
 public class TaskServiceImpl implements TaskService {
     private static final Logger logger = LoggerFactory.getLogger(TaskServiceImpl.class);
     private final TaskDao taskDao;
-    private final TaskHistoryDao taskHistoryDao;
     private final UserDao userDao;
-    private final UserPointsDao userPointsDao;
     
-    public TaskServiceImpl(TaskDao taskDao, TaskHistoryDao taskHistoryDao, 
-                          UserDao userDao, UserPointsDao userPointsDao) {
+    public TaskServiceImpl() {
+        this.taskDao = new TaskDaoImpl();
+        this.userDao = new UserDaoImpl();
+    }
+    
+    public TaskServiceImpl(TaskDao taskDao, UserDao userDao) {
         this.taskDao = taskDao;
-        this.taskHistoryDao = taskHistoryDao;
         this.userDao = userDao;
-        this.userPointsDao = userPointsDao;
     }
 
     @Override
-    public Task createTask(Task task) {
-        // Make sure the requester exists
-        Optional<User> requester = userDao.findById(task.getRequesterId());
-        if (!requester.isPresent()) {
-            throw new IllegalArgumentException("Requester not found: " + task.getRequesterId());
+    public Task createTask(String title, String description, int requesterId, String location,
+                          LocalDate scheduledDate, LocalTime scheduledTime, int estimatedDuration,
+                          String urgencyLevel) throws SQLException, IllegalArgumentException {
+        // Validate inputs
+        if (title == null || title.trim().isEmpty()) {
+            throw new IllegalArgumentException("Title cannot be empty");
         }
         
-        // Set initial status
-        task.setStatus(Task.Status.AVAILABLE);
+        if (description == null || description.trim().isEmpty()) {
+            throw new IllegalArgumentException("Description cannot be empty");
+        }
         
-        logger.info("Creating task: {}", task.getTitle());
-        return taskDao.create(task);
+        if (requesterId <= 0) {
+            throw new IllegalArgumentException("Invalid requester ID");
+        }
+        
+        if (location == null || location.trim().isEmpty()) {
+            throw new IllegalArgumentException("Location cannot be empty");
+        }
+        
+        if (scheduledDate == null) {
+            throw new IllegalArgumentException("Scheduled date cannot be null");
+        }
+        
+        if (scheduledDate.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Scheduled date cannot be in the past");
+        }
+        
+        if (scheduledTime == null) {
+            throw new IllegalArgumentException("Scheduled time cannot be null");
+        }
+        
+        if (estimatedDuration <= 0) {
+            throw new IllegalArgumentException("Estimated duration must be positive");
+        }
+        
+        // Validate urgency level
+        if (urgencyLevel == null || (!urgencyLevel.equals("LOW") && !urgencyLevel.equals("MEDIUM") && !urgencyLevel.equals("HIGH"))) {
+            throw new IllegalArgumentException("Invalid urgency level: must be LOW, MEDIUM, or HIGH");
+        }
+        
+        // Check if the requester exists and is an elderly user
+        User requester = userDao.findById(requesterId);
+        if (requester == null) {
+            throw new IllegalArgumentException("Requester not found");
+        }
+        
+        if (!"ELDERLY".equals(requester.getRole())) {
+            throw new IllegalArgumentException("Only elderly users can request tasks");
+        }
+        
+        // Create and save the task
+        Task task = new Task();
+        task.setTitle(title);
+        task.setDescription(description);
+        task.setRequesterId(requesterId);
+        task.setLocation(location);
+        task.setScheduledDate(scheduledDate);
+        task.setScheduledTime(scheduledTime);
+        task.setEstimatedDuration(estimatedDuration);
+        task.setUrgencyLevel(urgencyLevel);
+        task.setStatus("AVAILABLE");
+        
+        logger.info("Creating new task: {} for requester ID: {}", title, requesterId);
+        return taskDao.save(task);
     }
 
     @Override
-    public Optional<Task> getTaskById(int taskId) {
-        return taskDao.findById(taskId);
-    }
-
-    @Override
-    public List<Task> getAllTasks() {
+    public List<Task> getAllTasks() throws SQLException {
         return taskDao.findAll();
     }
 
     @Override
-    public List<Task> getTasksByRequesterId(int requesterId) {
-        return taskDao.findByRequesterId(requesterId);
+    public List<Task> getAvailableTasks() throws SQLException {
+        return taskDao.findByStatus("AVAILABLE");
     }
 
     @Override
-    public List<Task> getTasksByVolunteerId(int volunteerId) {
-        return taskDao.findByVolunteerId(volunteerId);
-    }
-
-    @Override
-    public List<Task> getTasksByStatus(Task.Status status) {
+    public List<Task> getTasksByStatus(String status) throws SQLException {
+        if (status == null || status.trim().isEmpty()) {
+            throw new IllegalArgumentException("Status cannot be empty");
+        }
+        
         return taskDao.findByStatus(status);
     }
 
     @Override
-    public List<Task> getAvailableTasks() {
-        return taskDao.findAvailableTasks();
+    public List<Task> getTasksByRequesterId(int requesterId) throws SQLException {
+        if (requesterId <= 0) {
+            throw new IllegalArgumentException("Invalid requester ID");
+        }
+        
+        return taskDao.findByRequesterId(requesterId);
     }
 
     @Override
-    public List<Task> getTasksByScheduledDate(LocalDate date) {
-        return taskDao.findByScheduledDate(date);
+    public List<Task> getTasksByVolunteerId(int volunteerId) throws SQLException {
+        if (volunteerId <= 0) {
+            throw new IllegalArgumentException("Invalid volunteer ID");
+        }
+        
+        return taskDao.findByVolunteerId(volunteerId);
     }
 
     @Override
-    public Task assignTask(int taskId, int volunteerId, int changedById, TaskHistory.ChangedBy changedBy) {
-        Optional<Task> optTask = taskDao.findById(taskId);
-        if (!optTask.isPresent()) {
-            throw new IllegalArgumentException("Task not found: " + taskId);
+    public Task getTaskById(int taskId) throws SQLException {
+        if (taskId <= 0) {
+            throw new IllegalArgumentException("Invalid task ID");
         }
         
-        Task task = optTask.get();
-        if (task.getStatus() != Task.Status.AVAILABLE) {
-            throw new IllegalStateException("Task is not available for assignment: " + taskId);
-        }
-        
-        // Make sure the volunteer exists
-        Optional<User> volunteer = userDao.findById(volunteerId);
-        if (!volunteer.isPresent()) {
-            throw new IllegalArgumentException("Volunteer not found: " + volunteerId);
-        }
-        
-        // Record the previous status
-        Task.Status previousStatus = task.getStatus();
-        
-        // Assign the task to the volunteer
-        boolean success = taskDao.assignTask(taskId, volunteerId);
-        if (!success) {
-            throw new RuntimeException("Failed to assign task: " + taskId);
-        }
-        
-        // Reload the task
-        task = taskDao.findById(taskId).orElseThrow(() -> new RuntimeException("Failed to reload task: " + taskId));
-        
-        // Record the change in task history
-        taskHistoryDao.recordStatusChange(
-            taskId,
-            changedById,
-            changedBy,
-            previousStatus,
-            task.getStatus(),
-            "Task assigned to volunteer: " + volunteer.get().getUsername()
-        );
-        
-        logger.info("Task {} assigned to volunteer {}", taskId, volunteerId);
-        return task;
+        return taskDao.findById(taskId);
     }
 
     @Override
-    public Task startTask(int taskId, int volunteerId) {
-        Optional<Task> optTask = taskDao.findById(taskId);
-        if (!optTask.isPresent()) {
-            throw new IllegalArgumentException("Task not found: " + taskId);
+    public Task updateTask(Task task) throws SQLException {
+        if (task == null) {
+            throw new IllegalArgumentException("Task cannot be null");
         }
         
-        Task task = optTask.get();
-        
-        // Check if the task is assigned to this volunteer
-        if (task.getVolunteerId() == null || task.getVolunteerId() != volunteerId) {
-            throw new IllegalStateException("Task is not assigned to this volunteer: " + volunteerId);
+        if (task.getTaskId() <= 0) {
+            throw new IllegalArgumentException("Invalid task ID");
         }
         
-        if (task.getStatus() != Task.Status.ASSIGNED) {
-            throw new IllegalStateException("Task is not in ASSIGNED status: " + taskId);
+        // Check if the task exists
+        Task existingTask = taskDao.findById(task.getTaskId());
+        if (existingTask == null) {
+            throw new IllegalArgumentException("Task not found");
         }
         
-        // Record the previous status
-        Task.Status previousStatus = task.getStatus();
-        
-        // Change status to IN_PROGRESS
-        boolean success = taskDao.updateStatus(taskId, Task.Status.IN_PROGRESS);
-        if (!success) {
-            throw new RuntimeException("Failed to start task: " + taskId);
+        // Check if the requester exists and is an elderly user
+        User requester = userDao.findById(task.getRequesterId());
+        if (requester == null) {
+            throw new IllegalArgumentException("Requester not found");
         }
         
-        // Reload the task
-        task = taskDao.findById(taskId).orElseThrow(() -> new RuntimeException("Failed to reload task: " + taskId));
-        
-        // Record the change in task history
-        taskHistoryDao.recordStatusChange(
-            taskId,
-            volunteerId,
-            TaskHistory.ChangedBy.VOLUNTEER,
-            previousStatus,
-            task.getStatus(),
-            "Task started by volunteer"
-        );
-        
-        logger.info("Task {} started by volunteer {}", taskId, volunteerId);
-        return task;
-    }
-
-    @Override
-    public Task completeTask(int taskId, int volunteerId) {
-        Optional<Task> optTask = taskDao.findById(taskId);
-        if (!optTask.isPresent()) {
-            throw new IllegalArgumentException("Task not found: " + taskId);
+        if (!"ELDERLY".equals(requester.getRole())) {
+            throw new IllegalArgumentException("Only elderly users can request tasks");
         }
         
-        Task task = optTask.get();
-        
-        // Check if the task is assigned to this volunteer
-        if (task.getVolunteerId() == null || task.getVolunteerId() != volunteerId) {
-            throw new IllegalStateException("Task is not assigned to this volunteer: " + volunteerId);
+        // If volunteer ID is provided, check if the volunteer exists and is a volunteer
+        if (task.getVolunteerId() != null) {
+            User volunteer = userDao.findById(task.getVolunteerId());
+            if (volunteer == null) {
+                throw new IllegalArgumentException("Volunteer not found");
+            }
+            
+            if (!"VOLUNTEER".equals(volunteer.getRole())) {
+                throw new IllegalArgumentException("Only volunteer users can be assigned to tasks");
+            }
         }
         
-        if (task.getStatus() != Task.Status.IN_PROGRESS && task.getStatus() != Task.Status.ASSIGNED) {
-            throw new IllegalStateException("Task cannot be completed from current status: " + task.getStatus());
-        }
-        
-        // Record the previous status
-        Task.Status previousStatus = task.getStatus();
-        
-        // Change status to COMPLETED
-        boolean success = taskDao.updateStatus(taskId, Task.Status.COMPLETED);
-        if (!success) {
-            throw new RuntimeException("Failed to complete task: " + taskId);
-        }
-        
-        // Update volunteer points
-        userPointsDao.addTaskCompletion(volunteerId, task.getEstimatedDuration());
-        
-        // Reload the task
-        task = taskDao.findById(taskId).orElseThrow(() -> new RuntimeException("Failed to reload task: " + taskId));
-        
-        // Record the change in task history
-        taskHistoryDao.recordStatusChange(
-            taskId,
-            volunteerId,
-            TaskHistory.ChangedBy.VOLUNTEER,
-            previousStatus,
-            task.getStatus(),
-            "Task completed by volunteer"
-        );
-        
-        logger.info("Task {} completed by volunteer {}", taskId, volunteerId);
-        return task;
-    }
-
-    @Override
-    public Task cancelTask(int taskId, int userId, TaskHistory.ChangedBy changedBy, String reason) {
-        Optional<Task> optTask = taskDao.findById(taskId);
-        if (!optTask.isPresent()) {
-            throw new IllegalArgumentException("Task not found: " + taskId);
-        }
-        
-        Task task = optTask.get();
-        
-        // Cannot cancel if already completed
-        if (task.getStatus() == Task.Status.COMPLETED) {
-            throw new IllegalStateException("Cannot cancel a completed task: " + taskId);
-        }
-        
-        // Record the previous status
-        Task.Status previousStatus = task.getStatus();
-        
-        // Change status to CANCELLED
-        boolean success = taskDao.updateStatus(taskId, Task.Status.CANCELLED);
-        if (!success) {
-            throw new RuntimeException("Failed to cancel task: " + taskId);
-        }
-        
-        // Reload the task
-        task = taskDao.findById(taskId).orElseThrow(() -> new RuntimeException("Failed to reload task: " + taskId));
-        
-        // Record the change in task history
-        taskHistoryDao.recordStatusChange(
-            taskId,
-            userId,
-            changedBy,
-            previousStatus,
-            task.getStatus(),
-            "Task cancelled. Reason: " + reason
-        );
-        
-        logger.info("Task {} cancelled by {} {}", taskId, changedBy, userId);
-        return task;
-    }
-
-    @Override
-    public Task reassignTask(int taskId, int requesterId, String reason) {
-        Optional<Task> optTask = taskDao.findById(taskId);
-        if (!optTask.isPresent()) {
-            throw new IllegalArgumentException("Task not found: " + taskId);
-        }
-        
-        Task task = optTask.get();
-        
-        // Check if the requester is the one who created the task
-        if (task.getRequesterId() != requesterId) {
-            throw new IllegalStateException("Only the task requester can reassign the task: " + requesterId);
-        }
-        
-        // Cannot reassign if already completed or cancelled
-        if (task.getStatus() == Task.Status.COMPLETED || task.getStatus() == Task.Status.CANCELLED) {
-            throw new IllegalStateException("Cannot reassign task with status: " + task.getStatus());
-        }
-        
-        // Store information for history
-        Task.Status previousStatus = task.getStatus();
-        Integer previousVolunteerId = task.getVolunteerId();
-        
-        // Reassign the task (removes volunteer)
-        boolean success = taskDao.reassignTask(taskId, reason);
-        if (!success) {
-            throw new RuntimeException("Failed to reassign task: " + taskId);
-        }
-        
-        // Update volunteer points if there was a volunteer
-        if (previousVolunteerId != null) {
-            userPointsDao.addTaskReassignment(previousVolunteerId);
-        }
-        
-        // Reload the task
-        task = taskDao.findById(taskId).orElseThrow(() -> new RuntimeException("Failed to reload task: " + taskId));
-        
-        // Record the change in task history
-        taskHistoryDao.recordVolunteerReassignment(
-            taskId,
-            requesterId,
-            TaskHistory.ChangedBy.ELDERLY,
-            previousStatus,
-            task.getStatus(),
-            previousVolunteerId,
-            null, // New volunteer ID is null
-            reason,
-            "Volunteer removed by requester"
-        );
-        
-        logger.info("Task {} reassigned by requester {}", taskId, requesterId);
-        return task;
-    }
-
-    @Override
-    public Task updateTask(Task task) {
-        // Make sure the task exists
-        Optional<Task> existingTask = taskDao.findById(task.getTaskId());
-        if (!existingTask.isPresent()) {
-            throw new IllegalArgumentException("Task not found: " + task.getTaskId());
-        }
-        
-        logger.info("Updating task: {}", task.getTaskId());
+        logger.info("Updating task with ID: {}", task.getTaskId());
         return taskDao.update(task);
     }
 
     @Override
-    public boolean deleteTask(int taskId) {
-        // Only allow deletion if task is PENDING or AVAILABLE
-        Optional<Task> task = taskDao.findById(taskId);
-        if (!task.isPresent()) {
-            return false;
+    public boolean assignTaskToVolunteer(int taskId, int volunteerId) throws SQLException {
+        if (taskId <= 0) {
+            throw new IllegalArgumentException("Invalid task ID");
         }
         
-        if (task.get().getStatus() != Task.Status.PENDING && task.get().getStatus() != Task.Status.AVAILABLE) {
-            throw new IllegalStateException("Cannot delete task with status: " + task.get().getStatus());
+        if (volunteerId <= 0) {
+            throw new IllegalArgumentException("Invalid volunteer ID");
         }
         
-        logger.info("Deleting task: {}", taskId);
-        return taskDao.deleteById(taskId);
+        // Check if the task exists
+        Task task = taskDao.findById(taskId);
+        if (task == null) {
+            throw new IllegalArgumentException("Task not found");
+        }
+        
+        // Check if the task is available
+        if (!"AVAILABLE".equals(task.getStatus())) {
+            throw new IllegalArgumentException("Task is not available");
+        }
+        
+        // Check if the volunteer exists and is a volunteer
+        User volunteer = userDao.findById(volunteerId);
+        if (volunteer == null) {
+            throw new IllegalArgumentException("Volunteer not found");
+        }
+        
+        if (!"VOLUNTEER".equals(volunteer.getRole())) {
+            throw new IllegalArgumentException("Only volunteer users can be assigned to tasks");
+        }
+        
+        logger.info("Assigning task ID: {} to volunteer ID: {}", taskId, volunteerId);
+        return taskDao.assignVolunteer(taskId, volunteerId);
     }
 
     @Override
-    public List<TaskHistory> getTaskHistory(int taskId) {
-        return taskHistoryDao.findByTaskId(taskId);
+    public boolean updateTaskStatus(int taskId, String status) throws SQLException {
+        if (taskId <= 0) {
+            throw new IllegalArgumentException("Invalid task ID");
+        }
+        
+        if (status == null || status.trim().isEmpty()) {
+            throw new IllegalArgumentException("Status cannot be empty");
+        }
+        
+        // Validate status
+        if (!status.equals("PENDING") && !status.equals("ASSIGNED") && !status.equals("IN_PROGRESS") &&
+            !status.equals("COMPLETED") && !status.equals("CANCELLED") && !status.equals("AVAILABLE") &&
+            !status.equals("REASSIGNED")) {
+            throw new IllegalArgumentException("Invalid status");
+        }
+        
+        // Check if the task exists
+        Task task = taskDao.findById(taskId);
+        if (task == null) {
+            throw new IllegalArgumentException("Task not found");
+        }
+        
+        logger.info("Updating task ID: {} status to: {}", taskId, status);
+        return taskDao.updateStatus(taskId, status);
+    }
+
+    @Override
+    public boolean cancelTask(int taskId) throws SQLException {
+        if (taskId <= 0) {
+            throw new IllegalArgumentException("Invalid task ID");
+        }
+        
+        // Check if the task exists
+        Task task = taskDao.findById(taskId);
+        if (task == null) {
+            throw new IllegalArgumentException("Task not found");
+        }
+        
+        // Check if the task can be cancelled
+        if ("COMPLETED".equals(task.getStatus()) || "CANCELLED".equals(task.getStatus())) {
+            throw new IllegalArgumentException("Cannot cancel a completed or already cancelled task");
+        }
+        
+        logger.info("Cancelling task ID: {}", taskId);
+        return taskDao.updateStatus(taskId, "CANCELLED");
+    }
+
+    @Override
+    public boolean deleteTask(int taskId) throws SQLException {
+        if (taskId <= 0) {
+            throw new IllegalArgumentException("Invalid task ID");
+        }
+        
+        // Check if the task exists
+        Task task = taskDao.findById(taskId);
+        if (task == null) {
+            throw new IllegalArgumentException("Task not found");
+        }
+        
+        logger.info("Deleting task ID: {}", taskId);
+        return taskDao.deleteById(taskId);
     }
 }

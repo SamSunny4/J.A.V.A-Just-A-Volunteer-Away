@@ -4,20 +4,19 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * User entity class that represents a user in the system
+ * User model representing both elderly users and volunteers
  */
 public class User {
     private int userId;
     private String username;
-    private String password;
+    private String password; // Will be stored hashed
     private String email;
     private String firstName;
     private String lastName;
     private String phoneNumber;
     private String address;
     private LocalDate dateOfBirth;
-    private int roleId;
-    private String roleName; // Not stored in DB, used for convenience
+    private String role; // ELDERLY, VOLUNTEER, or ADMIN
     private boolean isActive;
     private String bio;
     private String profileImage;
@@ -28,20 +27,20 @@ public class User {
     public User() {
     }
 
-    // Constructor with essential fields
-    public User(String username, String password, String email, String firstName, String lastName, int roleId) {
+    // Constructor with required fields for registration
+    public User(String username, String password, String email, String firstName, String lastName, String role) {
         this.username = username;
         this.password = password;
         this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
-        this.roleId = roleId;
+        this.role = role;
         this.isActive = true;
     }
 
     // Full constructor
     public User(int userId, String username, String password, String email, String firstName, String lastName,
-                String phoneNumber, String address, LocalDate dateOfBirth, int roleId, boolean isActive,
+                String phoneNumber, String address, LocalDate dateOfBirth, String role, boolean isActive,
                 String bio, String profileImage, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.userId = userId;
         this.username = username;
@@ -52,7 +51,7 @@ public class User {
         this.phoneNumber = phoneNumber;
         this.address = address;
         this.dateOfBirth = dateOfBirth;
-        this.roleId = roleId;
+        this.role = role;
         this.isActive = isActive;
         this.bio = bio;
         this.profileImage = profileImage;
@@ -133,20 +132,12 @@ public class User {
         this.dateOfBirth = dateOfBirth;
     }
 
-    public int getRoleId() {
-        return roleId;
+    public String getRole() {
+        return role;
     }
 
-    public void setRoleId(int roleId) {
-        this.roleId = roleId;
-    }
-
-    public String getRoleName() {
-        return roleName;
-    }
-
-    public void setRoleName(String roleName) {
-        this.roleName = roleName;
+    public void setRole(String role) {
+        this.role = role;
     }
 
     public boolean isActive() {
@@ -197,12 +188,7 @@ public class User {
                 ", email='" + email + '\'' +
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
-                ", roleId=" + roleId +
-                ", roleName='" + roleName + '\'' +
+                ", role='" + role + '\'' +
                 '}';
-    }
-
-    public String getFullName() {
-        return firstName + " " + lastName;
     }
 }
