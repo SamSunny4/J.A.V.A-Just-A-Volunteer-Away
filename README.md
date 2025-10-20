@@ -1,6 +1,15 @@
 # J.A.V.A - Just A Volunteer Away
 
-A Swing-based GUI application connecting volunteers with elderly people who need help with daily tasks.
+A modern Swing-based GUI application connecting volunteers with elderly people who need help with daily tasks.
+
+## 🎨 Modern UI Features
+
+- **Professional Color Theme**: Orange and light blue color scheme
+- **Styled Buttons**: Interactive buttons with hover effects
+- **Custom Logo**: Display your own branding (replace `logo.png`)
+- **Clean Design**: Modern, user-friendly interface
+
+See [UI-SUMMARY.md](UI-SUMMARY.md) for visual improvements and [CUSTOMIZATION-GUIDE.md](CUSTOMIZATION-GUIDE.md) to customize the look.
 
 ## What It Does
 
