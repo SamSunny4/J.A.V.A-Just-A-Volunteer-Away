@@ -1,0 +1,70 @@
+@startuml JAVA_Architecture
+
+skinparam backgroundColor #F5F5DC
+skinparam componentStyle rectangle
+
+' Title
+title
+  J.A.V.A - Just A Volunteer Away
+  System Architecture
+end title
+
+' Presentation Layer
+package "Presentation Layer" #LightBlue {
+    component "VolunteerGUI\n- Login Panel\n- Elderly Panel\n- Volunteer Panel\n- Admin Panel" as GUI #FFD700
+}
+
+' Business Logic Layer
+package "Business Logic Layer" #LightGreen {
+    component "DatabaseManager\n- User Operations\n- Task Operations\n- Admin Operations" as DBM #90EE90
+}
+
+' Data Model Layer
+package "Data Model" #LightCoral {
+    component [User Model] as User #FFB6C1
+    component [Task Model] as Task #FFB6C1
+}
+
+' Database Layer
+database "MySQL Database" as DB {
+    folder "Tables" {
+        [users]
+        [tasks]
+        [user_points]
+        [task_history]
+    }
+}
+
+' Relationships
+GUI --> DBM : "Uses"
+GUI --> User : "Creates/Uses"
+GUI --> Task : "Creates/Uses"
+
+DBM --> User : "Manages"
+DBM --> Task : "Manages"
+DBM --> DB : "JDBC Connection"
+
+' Notes
+note right of GUI
+  **Swing-based UI**
+  - Login & Registration
+  - Role-based dashboards
+  - Task management
+  - Leaderboard & Stats
+end note
+
+note right of DBM
+  **Database Operations**
+  - User authentication
+  - Task CRUD operations
+  - Points & leaderboard
+  - History tracking
+end note
+
+note bottom of DB
+  **MySQL Database**
+  Connection: localhost:3306
+  Database: volunteer_app
+end note
+
+@enduml
