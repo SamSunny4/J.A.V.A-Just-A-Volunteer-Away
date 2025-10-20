@@ -1,0 +1,768 @@
+@startuml J.A.V.A System - Class Diagram
+
+left to right direction
+
+!define ENTITY_COLOR #E1F5FE
+!define MANAGER_COLOR #FFF9C4
+!define GUI_COLOR #F3E5F5
+
+title J.A.V.A (Just A Volunteer Away) - System Class Diagram
+
+' ==================== MODEL CLASSES ====================
+
+class User <<Entity>> ENTITY_COLOR {
+  - userId: int
+  - username: String
+  - password: String
+  - email: String
+  - firstName: String
+  - lastName: String
+  - phoneNumber: String
+  - role: String
+  - points: int
+  - tasksCompleted: int
+  - isActive: boolean
+  __
+  + User(username, password, email, firstName, lastName, phoneNumber, role)
+  + User(userId, username, email, firstName, lastName, phoneNumber, role, points, tasksCompleted)
+  __
+  + getUserId(): int
+  + getUsername(): String
+  + getPassword(): String
+  + getEmail(): String
+  + getFirstName(): String
+  + getLastName(): String
+  + getPhoneNumber(): String
+  + getRole(): String
+  + getPoints(): int
+  + getTasksCompleted(): int
+  + isActive(): boolean
+  __
+  + setUserId(userId: int): void
+  + setPassword(password: String): void
+  + setEmail(email: String): void
+  + setPhoneNumber(phoneNumber: String): void
+  + setPoints(points: int): void
+  + setTasksCompleted(tasksCompleted: int): void
+  + setActive(isActive: boolean): void
+  __
+  + toString(): String
+}
+
+class Task <<Entity>> ENTITY_COLOR {
+  - taskId: int
+  - title: String
+  - description: String
+  - requesterId: int
+  - volunteerId: Integer
+  - status: String
+  - location: String
+  - scheduledDate: String
+  - scheduledTime: String
+  - estimatedDuration: int
+  - volunteerConfirmed: boolean
+  - elderlyConfirmed: boolean
+  __
+  + Task(title, description, requesterId, status, location, scheduledDate, scheduledTime, estimatedDuration)
+  + Task(taskId, title, description, requesterId, volunteerId, status, location, scheduledDate, scheduledTime, estimatedDuration, volunteerConfirmed, elderlyConfirmed)
+  __
+  + getTaskId(): int
+  + getTitle(): String
+  + getDescription(): String
+  + getRequesterId(): int
+  + getVolunteerId(): Integer
+  + getStatus(): String
+  + getLocation(): String
+  + getScheduledDate(): String
+  + getScheduledTime(): String
+  + getEstimatedDuration(): int
+  + isVolunteerConfirmed(): boolean
+  + isElderlyConfirmed(): boolean
+  __
+  + setTaskId(taskId: int): void
+  + setVolunteerId(volunteerId: Integer): void
+  + setStatus(status: String): void
+  + setVolunteerConfirmed(confirmed: boolean): void
+  + setElderlyConfirmed(confirmed: boolean): void
+  __
+  + toString(): String
+}
+
+' ==================== DATABASE MANAGER ====================
+
+class DatabaseManager <<Manager>> MANAGER_COLOR {
+  - {static} DB_URL: String = "jdbc:mysql://localhost:3306/volunteer_app"
+  - {static} DB_USER: String = "root"
+  - {static} DB_PASSWORD: String = "root"
+  __
+  ' User Operations
+  + {static} registerUser(user: User): boolean
+  + {static} loginUser(username: String, password: String): User
+  + {static} getLeaderboard(limit: int): List<User>
+  __
+  ' Task Operations
+  + {static} createTask(task: Task): boolean
+  + {static} getAvailableTasks(): List<Task>
+  + {static} getTasksByRequester(requesterId: int): List<Task>
+  + {static} getTasksByVolunteer(volunteerId: int): List<Task>
+  + {static} assignTask(taskId: int, volunteerId: int): boolean
+  + {static} updateTaskStatus(taskId: int, status: String): boolean
+  + {static} volunteerConfirmTask(taskId: int, volunteerId: int): boolean
+  + {static} elderlyConfirmTask(taskId: int, requesterId: int): boolean
+  + {static} reassignTask(taskId: int): boolean
+  + {static} deleteTask(taskId: int, requesterId: int): boolean
+  + {static} cancelTask(taskId: int, requesterId: int): boolean
+  __
+  ' Admin Operations
+  + {static} getAllUsers(): List<User>
+  + {static} getAllTasks(): List<Task>
+  + {static} toggleUserStatus(userId: int, isActive: boolean): boolean
+  + {static} adminDeleteTask(taskId: int): boolean
+  + {static} getTaskHistory(): List<String>
+  + {static} addTaskHistory(taskId: int, userId: int, actionType: String, previousStatus: String, newStatus: String): void
+  + {static} getSystemStats(): String
+  __
+  ' Helper Methods
+  - {static} getConnection(): Connection
+  - {static} createUserPoints(userId: int): void
+  - {static} updateVolunteerPoints(volunteerId: int, durationMinutes: int): void
+  - {static} getTaskById(taskId: int): Task
+  - {static} createTaskFromResultSet(rs: ResultSet): Task
+  - {static} cancelUserActiveTasks(userId: int): void
+  __
+  + {static} testConnection(): boolean
+}
+
+' ==================== GUI CLASS ====================
+
+class VolunteerGUI <<GUI>> GUI_COLOR {
+  - currentUser: User
+  - cardLayout: CardLayout
+  - mainPanel: JPanel
+  - {static} LOGIN_PANEL: String = "Login"
+  - {static} ELDERLY_PANEL: String = "Elderly"
+  - {static} VOLUNTEER_PANEL: String = "Volunteer"
+  - {static} ADMIN_PANEL: String = "Admin"
+  __
+  + VolunteerGUI()
+  __
+  ' Panel Creation
+  - createLoginPanel(): JPanel
+  - createElderlyPanel(): JPanel
+  - createVolunteerPanel(): JPanel
+  - createAdminPanel(): JPanel
+  __
+  ' Login/Registration
+  - showRegisterDialog(): void
+  __
+  ' Elderly Panel Methods
+  - refreshElderlyPanel(): void
+  - showCreateTaskDialog(): void
+  - showDeleteTaskDialog(): void
+  - showElderlyConfirmDialog(): void
+  - showRemoveVolunteerDialog(): void
+  __
+  ' Volunteer Panel Methods
+  - refreshVolunteerPanel(): void
+  - showAcceptTaskDialog(): void
+  - showMyAssignedTasks(): void
+  - showUpdateStatusDialog(): void
+  - showLeaderboard(): void
+  __
+  ' Admin Panel Methods
+  - refreshAdminPanel(): void
+  - showAllUsers(): void
+  - showAllTasks(): void
+  - showTaskHistory(): void
+  - showManageUsers(): void
+  - showManageTasks(): void
+  __
+  ' Utility Methods
+  - logout(): void
+  __
+  + {static} main(args: String[]): void
+}
+
+' ==================== RELATIONSHIPS ====================
+
+' User and Task relationships
+User "1" -- "0..*" Task : requests >
+User "0..1" -- "0..*" Task : volunteers for >
+
+' DatabaseManager manages entities
+DatabaseManager ..> User : <<manages>>
+DatabaseManager ..> Task : <<manages>>
+
+' VolunteerGUI uses DatabaseManager
+VolunteerGUI ..> DatabaseManager : <<uses>>
+
+' VolunteerGUI interacts with entities
+VolunteerGUI ..> User : <<displays>>
+VolunteerGUI ..> Task : <<displays>>
+
+note right of User
+  **Roles:**
+  - ELDERLY
+  - VOLUNTEER
+  - ADMIN
+end note
+
+note right of Task
+  **Status Values:**
+  - AVAILABLE
+  - ASSIGNED
+  - IN_PROGRESS
+  - PENDING_ELDERLY_CONFIRMATION
+  - PENDING_VOLUNTEER_CONFIRMATION
+  - COMPLETED
+  - CANCELLED
+end note
+
+note bottom of DatabaseManager
+  All methods are static.
+  Handles all database operations
+  and business logic.
+end note
+
+@enduml
+
+' ==================== SEQUENCE DIAGRAM: TASK CREATION ====================
+
+@startuml Task Creation Sequence
+
+left to right direction
+
+title Task Creation and Assignment Flow
+
+actor Elderly
+participant "VolunteerGUI" as GUI
+participant "DatabaseManager" as DB
+database "MySQL" as MySQL
+actor Volunteer
+
+== Task Creation ==
+Elderly -> GUI: Click "Create Task"
+activate GUI
+GUI -> GUI: showCreateTaskDialog()
+GUI -> Elderly: Display form
+Elderly -> GUI: Fill details & Submit
+GUI -> DB: createTask(task)
+activate DB
+DB -> MySQL: INSERT INTO tasks
+activate MySQL
+MySQL --> DB: Success
+deactivate MySQL
+DB --> GUI: true
+deactivate DB
+GUI --> Elderly: "Task created successfully!"
+deactivate GUI
+
+== Task Acceptance ==
+Volunteer -> GUI: View Available Tasks
+activate GUI
+GUI -> DB: getAvailableTasks()
+activate DB
+DB -> MySQL: SELECT * FROM tasks WHERE status='AVAILABLE'
+activate MySQL
+MySQL --> DB: Task list
+deactivate MySQL
+DB --> GUI: List<Task>
+deactivate DB
+GUI --> Volunteer: Display tasks
+Volunteer -> GUI: Accept task
+GUI -> DB: assignTask(taskId, volunteerId)
+activate DB
+DB -> MySQL: UPDATE tasks SET volunteer_id=?, status='ASSIGNED'
+activate MySQL
+MySQL --> DB: Success
+deactivate MySQL
+DB --> GUI: true
+deactivate DB
+GUI --> Volunteer: "Task accepted!"
+deactivate GUI
+
+@enduml
+
+' ==================== SEQUENCE DIAGRAM: TWO-STEP COMPLETION ====================
+
+@startuml Two-Step Task Completion
+
+left to right direction
+
+title Two-Step Task Completion Flow
+
+actor Volunteer
+participant "VolunteerGUI" as GUI
+participant "DatabaseManager" as DB
+database "MySQL" as MySQL
+actor Elderly
+
+== Volunteer Confirms First ==
+Volunteer -> GUI: Mark task as complete
+activate GUI
+GUI -> DB: volunteerConfirmTask(taskId, volunteerId)
+activate DB
+DB -> MySQL: SELECT task details
+activate MySQL
+MySQL --> DB: Task (elderlyConfirmed=false)
+deactivate MySQL
+DB -> MySQL: UPDATE tasks SET\nvolunteer_confirmed=true,\nstatus='PENDING_ELDERLY_CONFIRMATION'
+activate MySQL
+MySQL --> DB: Success
+deactivate MySQL
+DB --> GUI: true
+deactivate DB
+GUI --> Volunteer: "Waiting for elderly confirmation"
+deactivate GUI
+
+== Elderly Confirms ==
+Elderly -> GUI: Confirm task completion
+activate GUI
+GUI -> DB: elderlyConfirmTask(taskId, requesterId)
+activate DB
+DB -> MySQL: SELECT task details
+activate MySQL
+MySQL --> DB: Task (volunteerConfirmed=true)
+deactivate MySQL
+DB -> MySQL: UPDATE tasks SET\nelderly_confirmed=true,\nstatus='COMPLETED'
+activate MySQL
+MySQL --> DB: Success
+deactivate MySQL
+DB -> DB: updateVolunteerPoints(volunteerId, duration)
+DB -> MySQL: UPDATE user_points\nSET points=points+10
+activate MySQL
+MySQL --> DB: Success
+deactivate MySQL
+DB --> GUI: true
+deactivate DB
+GUI --> Elderly: "Task completed!"
+deactivate GUI
+
+note right of DB
+  Points awarded only when
+  both parties confirm
+end note
+
+@enduml
+
+' ==================== STATE DIAGRAM: TASK LIFECYCLE ====================
+
+@startuml Task Lifecycle State Diagram
+
+left to right direction
+
+title Task Status State Machine
+
+[*] --> AVAILABLE : Elderly creates task
+
+AVAILABLE --> ASSIGNED : Volunteer accepts
+AVAILABLE --> CANCELLED : Elderly cancels
+
+ASSIGNED --> IN_PROGRESS : Volunteer starts work
+ASSIGNED --> AVAILABLE : Volunteer removed
+ASSIGNED --> CANCELLED : Elderly cancels
+
+IN_PROGRESS --> PENDING_ELDERLY_CONFIRMATION : Volunteer confirms
+IN_PROGRESS --> PENDING_VOLUNTEER_CONFIRMATION : Elderly confirms first
+IN_PROGRESS --> CANCELLED : Elderly cancels
+
+PENDING_ELDERLY_CONFIRMATION --> COMPLETED : Elderly confirms
+PENDING_VOLUNTEER_CONFIRMATION --> COMPLETED : Volunteer confirms
+
+COMPLETED --> [*]
+CANCELLED --> [*]
+
+note right of COMPLETED
+  Points awarded to volunteer
+  Both confirmations recorded
+end note
+
+note right of CANCELLED
+  No points awarded
+  Task cannot be revived
+end note
+
+@enduml
+
+' ==================== USE CASE DIAGRAM ====================
+
+@startuml Use Case Diagram
+
+title J.A.V.A System - Use Case Diagram
+
+left to right direction
+
+actor Elderly as elderly
+actor Volunteer as volunteer
+actor Admin as admin
+
+rectangle "J.A.V.A System" {
+  
+  ' Elderly Use Cases
+  usecase (Register Account) as UC1
+  usecase (Login) as UC2
+  usecase (Create Task Request) as UC3
+  usecase (View My Tasks) as UC4
+  usecase (Delete Task) as UC5
+  usecase (Remove Volunteer) as UC6
+  usecase (Confirm Task Completion) as UC7
+  
+  ' Volunteer Use Cases
+  usecase (View Available Tasks) as UC8
+  usecase (Accept Task) as UC9
+  usecase (View My Assigned Tasks) as UC10
+  usecase (Update Task Status) as UC11
+  usecase (Confirm Task Complete) as UC12
+  usecase (View Leaderboard) as UC13
+  
+  ' Admin Use Cases
+  usecase (View All Users) as UC14
+  usecase (Disable User Account) as UC15
+  usecase (Enable User Account) as UC16
+  usecase (View All Tasks) as UC17
+  usecase (Delete Any Task) as UC18
+  usecase (View Task History) as UC19
+  usecase (View System Statistics) as UC20
+}
+
+' Elderly relationships
+elderly --> UC1
+elderly --> UC2
+elderly --> UC3
+elderly --> UC4
+elderly --> UC5
+elderly --> UC6
+elderly --> UC7
+
+' Volunteer relationships
+volunteer --> UC1
+volunteer --> UC2
+volunteer --> UC8
+volunteer --> UC9
+volunteer --> UC10
+volunteer --> UC11
+volunteer --> UC12
+volunteer --> UC13
+
+' Admin relationships
+admin --> UC2
+admin --> UC14
+admin --> UC15
+admin --> UC16
+admin --> UC17
+admin --> UC18
+admin --> UC19
+admin --> UC20
+
+' Include relationships
+UC3 ..> UC2 : <<include>>
+UC8 ..> UC2 : <<include>>
+UC14 ..> UC2 : <<include>>
+
+' Extend relationships
+UC5 ..> UC4 : <<extend>>
+UC6 ..> UC4 : <<extend>>
+
+@enduml
+
+' ==================== COMPONENT DIAGRAM ====================
+
+@startuml Component Diagram
+
+left to right direction
+
+title J.A.V.A System - Component Architecture
+
+!define COMPONENT_COLOR #E3F2FD
+!define DATABASE_COLOR #FFEBEE
+
+package "Presentation Layer" <<Rectangle>> {
+  component [VolunteerGUI.class] as GUI COMPONENT_COLOR
+  
+  package "UI Panels" {
+    component [Login Panel] as Login
+    component [Elderly Panel] as ElderlyPanel
+    component [Volunteer Panel] as VolunteerPanel
+    component [Admin Panel] as AdminPanel
+  }
+  
+  GUI --> Login
+  GUI --> ElderlyPanel
+  GUI --> VolunteerPanel
+  GUI --> AdminPanel
+}
+
+package "Business Logic Layer" <<Rectangle>> {
+  component [DatabaseManager.class] as DBM COMPONENT_COLOR
+  
+  package "Operations" {
+    component [User Operations] as UserOps
+    component [Task Operations] as TaskOps
+    component [Admin Operations] as AdminOps
+  }
+  
+  DBM --> UserOps
+  DBM --> TaskOps
+  DBM --> AdminOps
+}
+
+package "Data Layer" <<Rectangle>> {
+  component [User.class] as UserModel COMPONENT_COLOR
+  component [Task.class] as TaskModel COMPONENT_COLOR
+}
+
+package "External Libraries" <<Rectangle>> {
+  component [mysql-connector-j-9.4.0.jar] as MySQLDriver
+}
+
+database "MySQL Database" as MySQL DATABASE_COLOR {
+  frame "Tables" {
+    storage [users] as UsersTable
+    storage [tasks] as TasksTable
+    storage [user_points] as PointsTable
+    storage [task_history] as HistoryTable
+  }
+}
+
+' Connections
+GUI ..> DBM : <<uses>>
+DBM ..> UserModel : <<manages>>
+DBM ..> TaskModel : <<manages>>
+DBM ..> MySQLDriver : <<uses>>
+MySQLDriver --> MySQL : JDBC
+
+ElderlyPanel ..> TaskOps
+VolunteerPanel ..> TaskOps
+VolunteerPanel ..> UserOps
+AdminPanel ..> AdminOps
+
+UserOps --> UsersTable
+UserOps --> PointsTable
+TaskOps --> TasksTable
+TaskOps --> PointsTable
+AdminOps --> UsersTable
+AdminOps --> TasksTable
+AdminOps --> HistoryTable
+
+@enduml
+
+' ==================== DEPLOYMENT DIAGRAM ====================
+
+@startuml Deployment Diagram
+
+left to right direction
+
+title J.A.V.A System - Deployment Architecture
+
+node "User's Computer" {
+  node "Java Runtime Environment (JRE 21)" as JRE {
+    artifact "VolunteerGUI.class" as GUI
+    artifact "DatabaseManager.class" as DBM
+    artifact "User.class" as UserClass
+    artifact "Task.class" as TaskClass
+    artifact "mysql-connector-j-9.4.0.jar" as Driver
+    
+    GUI ..> DBM
+    DBM ..> Driver
+  }
+}
+
+node "Database Server" {
+  database "MySQL 8.0" as MySQL {
+    frame "volunteer_app" {
+      storage "users"
+      storage "tasks"
+      storage "user_points"
+      storage "task_history"
+    }
+  }
+}
+
+JRE --> MySQL : TCP/IP\nPort 3306\nJDBC Connection
+
+note right of MySQL
+  Database Credentials:
+  - Host: localhost
+  - Port: 3306
+  - User: root
+  - Password: root
+end note
+
+note left of JRE
+  Required:
+  - Java 21+
+  - MySQL Connector JAR
+end note
+
+@enduml
+
+' ==================== PACKAGE DIAGRAM ====================
+
+@startuml Package Diagram
+
+left to right direction
+
+title J.A.V.A System - Package Structure
+
+package "default" <<Rectangle>> {
+  
+  package "models" <<Folder>> {
+    class User
+    class Task
+  }
+  
+  package "database" <<Folder>> {
+    class DatabaseManager
+  }
+  
+  package "gui" <<Folder>> {
+    class VolunteerGUI
+  }
+  
+  package "resources" <<Folder>> {
+    package "sql" <<Folder>> {
+      file schema.sql
+    }
+  }
+  
+  package "lib" <<Folder>> {
+    file "mysql-connector-j-9.4.0.jar"
+  }
+}
+
+gui ..> database : <<uses>>
+gui ..> models : <<uses>>
+database ..> models : <<manages>>
+database ..> lib : <<uses>>
+database ..> sql : <<executes>>
+
+@enduml
+
+' ==================== ACTIVITY DIAGRAM: ADMIN DISABLE USER ====================
+
+@startuml Admin Disable User Activity
+
+left to right direction
+
+title Admin - Disable User Account Flow
+
+start
+
+:Admin logs in;
+:Navigate to Admin Panel;
+:Click "Manage Users";
+
+:System displays all active users;
+
+:Admin selects user to disable;
+
+:Click "Disable Account";
+
+:System shows confirmation dialog\nwith warning message;
+
+if (Admin confirms?) then (yes)
+  :System sets user.is_active = FALSE;
+  
+  fork
+    :Cancel all tasks requested by user\n(status = CANCELLED);
+  fork again
+    :Remove user from assigned tasks\n(volunteer_id = NULL);
+  fork again
+    :Log admin action in task_history;
+  end fork
+  
+  :Display success message;
+  :Refresh user list;
+else (no)
+  :Cancel operation;
+endif
+
+stop
+
+@enduml
+
+@startuml Database ER Diagram
+
+left to right direction
+
+title J.A.V.A System - Entity Relationship Diagram
+
+entity "users" as users {
+  * user_id : INT <<PK>>
+  --
+  * username : VARCHAR(50) <<UNIQUE>>
+  * password : VARCHAR(255)
+  * email : VARCHAR(100) <<UNIQUE>>
+  * first_name : VARCHAR(50)
+  * last_name : VARCHAR(50)
+    phone_number : VARCHAR(15)
+    address : TEXT
+    date_of_birth : DATE
+  * role : ENUM('ELDERLY','VOLUNTEER','ADMIN')
+  * is_active : BOOLEAN
+    bio : TEXT
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "user_points" as points {
+  * point_id : INT <<PK>>
+  --
+  * user_id : INT <<FK>> <<UNIQUE>>
+  * points : INT
+  * level : INT
+  * user_rank : VARCHAR(50)
+  * tasks_completed : INT
+  * tasks_cancelled : INT
+  * hours_volunteered : INT
+    last_activity_date : DATE
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "tasks" as tasks {
+  * task_id : INT <<PK>>
+  --
+  * title : VARCHAR(100)
+  * description : TEXT
+  * requester_id : INT <<FK>>
+    volunteer_id : INT <<FK>>
+  * status : ENUM
+    location : TEXT
+  * scheduled_date : DATE
+  * scheduled_time : TIME
+  * estimated_duration : INT
+  * urgency_level : ENUM('LOW','MEDIUM','HIGH')
+  * volunteer_confirmed : BOOLEAN
+  * elderly_confirmed : BOOLEAN
+    previous_volunteer_id : INT <<FK>>
+    reassignment_reason : TEXT
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "task_history" as history {
+  * history_id : INT <<PK>>
+  --
+  * task_id : INT <<FK>>
+  * changed_by_id : INT <<FK>>
+  * action_type : VARCHAR(50)
+    previous_status : VARCHAR(30)
+    new_status : VARCHAR(30)
+    previous_volunteer_id : INT <<FK>>
+    new_volunteer_id : INT <<FK>>
+    reassignment_reason : TEXT
+    notes : TEXT
+  * changed_at : TIMESTAMP
+}
+
+users ||--o{ tasks : "requester_id\n(requests)"
+users ||--o{ tasks : "volunteer_id\n(volunteers for)"
+users ||--o{ tasks : "previous_volunteer_id"
+users ||--|| points : "user_id"
+tasks ||--o{ history : "task_id"
+users ||--o{ history : "changed_by_id"
+users ||--o{ history : "previous_volunteer_id"
+users ||--o{ history : "new_volunteer_id"
+
+@enduml
