@@ -7,10 +7,15 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
@@ -26,15 +31,23 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.border.EmptyBorder;
 
 /**
  * J.A.V.A (Just a Volunteer Away) - GUI Application
- * A Swing-based volunteer management system
+ * A Swing-based volunteer management system with modern UI
  */
 public class VolunteerGUI extends JFrame {
     private User currentUser = null;
     private CardLayout cardLayout;
     private JPanel mainPanel;
+    
+    // Color Theme
+    private static final Color PRIMARY_COLOR = new Color(255, 140, 0);      // Orange
+    private static final Color SECONDARY_COLOR = new Color(173, 216, 230);  // Light Blue
+    private static final Color BACKGROUND_COLOR = new Color(235, 228, 220); // Beige
+    private static final Color TEXT_COLOR = new Color(0, 0, 0);
+    private static final Color BUTTON_HOVER = new Color(255, 165, 0);       // Lighter Orange
     
     // Panel names
     private static final String LOGIN_PANEL = "Login";
@@ -45,8 +58,15 @@ public class VolunteerGUI extends JFrame {
     public VolunteerGUI() {
         setTitle("J.A.V.A - Just a Volunteer Away");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(800, 600);
+        setSize(900, 650);
         setLocationRelativeTo(null);
+        
+        // Set modern look and feel
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         
         // Test database connection
         if (!DatabaseManager.testConnection()) {
@@ -63,6 +83,7 @@ public class VolunteerGUI extends JFrame {
         // Initialize CardLayout
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
+        mainPanel.setBackground(BACKGROUND_COLOR);
         
         // Add panels
         mainPanel.add(createLoginPanel(), LOGIN_PANEL);
@@ -74,43 +95,148 @@ public class VolunteerGUI extends JFrame {
         cardLayout.show(mainPanel, LOGIN_PANEL);
     }
     
+    /**
+     * Creates a styled button with theme colors
+     */
+    private JButton createStyledButton(String text) {
+        JButton button = new JButton(text);
+        button.setBackground(PRIMARY_COLOR);
+        button.setForeground(Color.BLACK);
+        button.setFont(new Font("Arial", Font.BOLD, 13));
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        button.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        
+        // Add hover effect
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(BUTTON_HOVER);
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(PRIMARY_COLOR);
+            }
+        });
+        
+        return button;
+    }
+    
+    /**
+     * Creates a secondary styled button (light blue theme)
+     */
+    private JButton createSecondaryButton(String text) {
+        JButton button = new JButton(text);
+        button.setBackground(SECONDARY_COLOR);
+        button.setForeground(Color.BLACK);
+        button.setFont(new Font("Arial", Font.BOLD, 12));
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        button.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        
+        // Add hover effect
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(135, 206, 250)); // Lighter blue
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(SECONDARY_COLOR);
+            }
+        });
+        
+        return button;
+    }
+    
     // ==================== LOGIN/REGISTRATION PANEL ====================
     
     private JPanel createLoginPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        JPanel panel = new JPanel(new BorderLayout(20, 20));
+        panel.setBackground(BACKGROUND_COLOR);
+        panel.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
         
-        // Header
+        // Top panel with logo and welcome text
+        JPanel topPanel = new JPanel(new GridBagLayout());
+        topPanel.setBackground(BACKGROUND_COLOR);
+        GridBagConstraints topGbc = new GridBagConstraints();
+        topGbc.gridx = 0;
+        topGbc.gridy = 0;
+        topGbc.insets = new Insets(10, 10, 10, 10);
+        
+        // Load and display logo
+        try {
+            File logoFile = new File("logo.png");
+            if (logoFile.exists()) {
+                BufferedImage logoImg = ImageIO.read(logoFile);
+                ImageIcon logoIcon = new ImageIcon(logoImg);
+                JLabel logoLabel = new JLabel(logoIcon);
+                topPanel.add(logoLabel, topGbc);
+            }
+        } catch (IOException e) {
+            System.err.println("Could not load logo: " + e.getMessage());
+        }
+        
+        // Welcome header
+        topGbc.gridy = 1;
         JLabel headerLabel = new JLabel("Welcome to J.A.V.A", SwingConstants.CENTER);
-        headerLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        panel.add(headerLabel, BorderLayout.NORTH);
+        headerLabel.setFont(new Font("Arial", Font.BOLD, 28));
+        headerLabel.setForeground(PRIMARY_COLOR);
+        topPanel.add(headerLabel, topGbc);
         
-        // Center panel with login/register
+        topGbc.gridy = 2;
+        
+        
+        panel.add(topPanel, BorderLayout.NORTH);
+        
+        // Center panel with login form
         JPanel centerPanel = new JPanel(new GridBagLayout());
+        centerPanel.setBackground(BACKGROUND_COLOR);
+        centerPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(SECONDARY_COLOR, 2),
+            BorderFactory.createEmptyBorder(20, 30, 20, 30)
+        ));
+        
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(8, 8, 8, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         
         // Username
         gbc.gridx = 0; gbc.gridy = 0;
-        centerPanel.add(new JLabel("Username:"), gbc);
+        JLabel usernameLabel = new JLabel("Username:");
+        usernameLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        usernameLabel.setForeground(TEXT_COLOR);
+        centerPanel.add(usernameLabel, gbc);
+        
         gbc.gridx = 1;
         JTextField usernameField = new JTextField(20);
+        usernameField.setFont(new Font("Arial", Font.PLAIN, 14));
+        usernameField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(SECONDARY_COLOR, 1),
+            BorderFactory.createEmptyBorder(5, 8, 5, 8)
+        ));
         centerPanel.add(usernameField, gbc);
         
         // Password
         gbc.gridx = 0; gbc.gridy = 1;
-        centerPanel.add(new JLabel("Password:"), gbc);
+        JLabel passwordLabel = new JLabel("Password:");
+        passwordLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        passwordLabel.setForeground(TEXT_COLOR);
+        centerPanel.add(passwordLabel, gbc);
+        
         gbc.gridx = 1;
         JPasswordField passwordField = new JPasswordField(20);
+        passwordField.setFont(new Font("Arial", Font.PLAIN, 14));
+        passwordField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(SECONDARY_COLOR, 1),
+            BorderFactory.createEmptyBorder(5, 8, 5, 8)
+        ));
         centerPanel.add(passwordField, gbc);
         
         // Buttons
         gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
-        JPanel buttonPanel = new JPanel(new FlowLayout());
+        gbc.insets = new Insets(20, 8, 8, 8);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
+        buttonPanel.setBackground(BACKGROUND_COLOR);
         
-        JButton loginButton = new JButton("Login");
-        JButton registerButton = new JButton("Register");
+        JButton loginButton = createStyledButton("Login");
+        JButton registerButton = createSecondaryButton("Register");
         
         loginButton.addActionListener(e -> {
             String username = usernameField.getText().trim();
@@ -150,12 +276,14 @@ public class VolunteerGUI extends JFrame {
     
     private void showRegisterDialog() {
         JDialog dialog = new JDialog(this, "Register New User", true);
-        dialog.setSize(400, 450);
+        dialog.setSize(450, 500);
         dialog.setLocationRelativeTo(this);
         
         JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(BACKGROUND_COLOR);
+        panel.setBorder(new EmptyBorder(15, 15, 15, 15));
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(8, 8, 8, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         
         JTextField usernameField = new JTextField(20);
@@ -166,53 +294,84 @@ public class VolunteerGUI extends JFrame {
         JTextField phoneField = new JTextField(20);
         JComboBox<String> roleCombo = new JComboBox<>(new String[]{"Elderly (need help)", "Volunteer (provide help)"});
         
+        // Style text fields
+        JTextField[] fields = {usernameField, emailField, firstNameField, lastNameField, phoneField};
+        for (JTextField field : fields) {
+            field.setFont(new Font("Arial", Font.PLAIN, 13));
+            field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(SECONDARY_COLOR, 1),
+                BorderFactory.createEmptyBorder(5, 8, 5, 8)
+            ));
+        }
+        passwordField.setFont(new Font("Arial", Font.PLAIN, 13));
+        passwordField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(SECONDARY_COLOR, 1),
+            BorderFactory.createEmptyBorder(5, 8, 5, 8)
+        ));
+        
         int row = 0;
         gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("Username:"), gbc);
+        JLabel usernameLabel = new JLabel("Username:");
+        usernameLabel.setFont(new Font("Arial", Font.BOLD, 13));
+        panel.add(usernameLabel, gbc);
         gbc.gridx = 1;
         panel.add(usernameField, gbc);
         
         row++;
         gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("Password:"), gbc);
+        JLabel passwordLabel = new JLabel("Password:");
+        passwordLabel.setFont(new Font("Arial", Font.BOLD, 13));
+        panel.add(passwordLabel, gbc);
         gbc.gridx = 1;
         panel.add(passwordField, gbc);
         
         row++;
         gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("Email:"), gbc);
+        JLabel emailLabel = new JLabel("Email:");
+        emailLabel.setFont(new Font("Arial", Font.BOLD, 13));
+        panel.add(emailLabel, gbc);
         gbc.gridx = 1;
         panel.add(emailField, gbc);
         
         row++;
         gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("First Name:"), gbc);
+        JLabel firstNameLabel = new JLabel("First Name:");
+        firstNameLabel.setFont(new Font("Arial", Font.BOLD, 13));
+        panel.add(firstNameLabel, gbc);
         gbc.gridx = 1;
         panel.add(firstNameField, gbc);
         
         row++;
         gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("Last Name:"), gbc);
+        JLabel lastNameLabel = new JLabel("Last Name:");
+        lastNameLabel.setFont(new Font("Arial", Font.BOLD, 13));
+        panel.add(lastNameLabel, gbc);
         gbc.gridx = 1;
         panel.add(lastNameField, gbc);
         
         row++;
         gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("Phone:"), gbc);
+        JLabel phoneLabel = new JLabel("Phone:");
+        phoneLabel.setFont(new Font("Arial", Font.BOLD, 13));
+        panel.add(phoneLabel, gbc);
         gbc.gridx = 1;
         panel.add(phoneField, gbc);
         
         row++;
         gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("Role:"), gbc);
+        JLabel roleLabel = new JLabel("Role:");
+        roleLabel.setFont(new Font("Arial", Font.BOLD, 13));
+        panel.add(roleLabel, gbc);
         gbc.gridx = 1;
         panel.add(roleCombo, gbc);
         
         row++;
         gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2;
-        JPanel buttonPanel = new JPanel();
-        JButton submitButton = new JButton("Register");
-        JButton cancelButton = new JButton("Cancel");
+        gbc.insets = new Insets(20, 8, 8, 8);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
+        buttonPanel.setBackground(BACKGROUND_COLOR);
+        JButton submitButton = createStyledButton("Register");
+        JButton cancelButton = createSecondaryButton("Cancel");
         
         submitButton.addActionListener(e -> {
             String role = roleCombo.getSelectedIndex() == 0 ? "ELDERLY" : "VOLUNTEER";
@@ -252,15 +411,18 @@ public class VolunteerGUI extends JFrame {
     
     private JPanel createElderlyPanel() {
         elderlyPanel = new JPanel(new BorderLayout(10, 10));
+        elderlyPanel.setBackground(BACKGROUND_COLOR);
         elderlyPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
         // Header
         JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(BACKGROUND_COLOR);
         JLabel headerLabel = new JLabel("Elderly User Dashboard", SwingConstants.CENTER);
-        headerLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        headerLabel.setFont(new Font("Arial", Font.BOLD, 22));
+        headerLabel.setForeground(PRIMARY_COLOR);
         headerPanel.add(headerLabel, BorderLayout.CENTER);
         
-        JButton logoutButton = new JButton("Logout");
+        JButton logoutButton = createSecondaryButton("Logout");
         logoutButton.addActionListener(e -> logout());
         headerPanel.add(logoutButton, BorderLayout.EAST);
         
@@ -270,16 +432,22 @@ public class VolunteerGUI extends JFrame {
         elderlyTasksArea = new JTextArea();
         elderlyTasksArea.setEditable(false);
         elderlyTasksArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        elderlyTasksArea.setBackground(Color.WHITE);
+        elderlyTasksArea.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(SECONDARY_COLOR, 2),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
         JScrollPane scrollPane = new JScrollPane(elderlyTasksArea);
         elderlyPanel.add(scrollPane, BorderLayout.CENTER);
         
         // Buttons
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        JButton createTaskButton = new JButton("Create New Task");
-        JButton refreshButton = new JButton("Refresh Tasks");
-        JButton confirmCompletionButton = new JButton("Confirm Task Completion");
-        JButton removeVolunteerButton = new JButton("Remove Volunteer");
-        JButton deleteTaskButton = new JButton("Delete Task");
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        buttonPanel.setBackground(BACKGROUND_COLOR);
+        JButton createTaskButton = createStyledButton("Create New Task");
+        JButton refreshButton = createSecondaryButton("Refresh Tasks");
+        JButton confirmCompletionButton = createStyledButton("Confirm Completion");
+        JButton removeVolunteerButton = createSecondaryButton("Remove Volunteer");
+        JButton deleteTaskButton = createSecondaryButton("Delete Task");
         
         createTaskButton.addActionListener(e -> showCreateTaskDialog());
         refreshButton.addActionListener(e -> refreshElderlyPanel());
@@ -615,17 +783,23 @@ public class VolunteerGUI extends JFrame {
     
     private JPanel createVolunteerPanel() {
         volunteerPanel = new JPanel(new BorderLayout(10, 10));
+        volunteerPanel.setBackground(BACKGROUND_COLOR);
         volunteerPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
         // Header with stats
         JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(BACKGROUND_COLOR);
         JLabel headerLabel = new JLabel("Volunteer Dashboard", SwingConstants.CENTER);
-        headerLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        headerLabel.setFont(new Font("Arial", Font.BOLD, 22));
+        headerLabel.setForeground(PRIMARY_COLOR);
         headerPanel.add(headerLabel, BorderLayout.CENTER);
         
         JPanel topRightPanel = new JPanel(new BorderLayout());
+        topRightPanel.setBackground(BACKGROUND_COLOR);
         statsLabel = new JLabel("", SwingConstants.RIGHT);
-        JButton logoutButton = new JButton("Logout");
+        statsLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        statsLabel.setForeground(TEXT_COLOR);
+        JButton logoutButton = createSecondaryButton("Logout");
         logoutButton.addActionListener(e -> logout());
         topRightPanel.add(statsLabel, BorderLayout.CENTER);
         topRightPanel.add(logoutButton, BorderLayout.SOUTH);
@@ -637,16 +811,22 @@ public class VolunteerGUI extends JFrame {
         volunteerTasksArea = new JTextArea();
         volunteerTasksArea.setEditable(false);
         volunteerTasksArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        volunteerTasksArea.setBackground(Color.WHITE);
+        volunteerTasksArea.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(SECONDARY_COLOR, 2),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
         JScrollPane scrollPane = new JScrollPane(volunteerTasksArea);
         volunteerPanel.add(scrollPane, BorderLayout.CENTER);
         
         // Buttons
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        JButton availableTasksButton = new JButton("View Available Tasks");
-        JButton acceptTaskButton = new JButton("Accept Task");
-        JButton myTasksButton = new JButton("My Assigned Tasks");
-        JButton updateStatusButton = new JButton("Update Task Status");
-        JButton leaderboardButton = new JButton("Leaderboard");
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        buttonPanel.setBackground(BACKGROUND_COLOR);
+        JButton availableTasksButton = createSecondaryButton("View Available Tasks");
+        JButton acceptTaskButton = createStyledButton("Accept Task");
+        JButton myTasksButton = createSecondaryButton("My Assigned Tasks");
+        JButton updateStatusButton = createStyledButton("Update Status");
+        JButton leaderboardButton = createSecondaryButton("Leaderboard");
         
         availableTasksButton.addActionListener(e -> showAvailableTasks());
         acceptTaskButton.addActionListener(e -> showAcceptTaskDialog());
@@ -914,14 +1094,17 @@ public class VolunteerGUI extends JFrame {
     
     private JPanel createAdminPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        panel.setBackground(BACKGROUND_COLOR);
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
         // Header with logout button
         JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(BACKGROUND_COLOR);
         JLabel headerLabel = new JLabel("Admin Dashboard", SwingConstants.CENTER);
-        headerLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        headerLabel.setFont(new Font("Arial", Font.BOLD, 22));
+        headerLabel.setForeground(PRIMARY_COLOR);
         
-        JButton logoutButton = new JButton("Logout");
+        JButton logoutButton = createSecondaryButton("Logout");
         logoutButton.addActionListener(e -> logout());
         
         headerPanel.add(headerLabel, BorderLayout.CENTER);
@@ -930,26 +1113,37 @@ public class VolunteerGUI extends JFrame {
         
         // Main content area
         JPanel contentPanel = new JPanel(new GridLayout(2, 1, 10, 10));
+        contentPanel.setBackground(BACKGROUND_COLOR);
         
         // System stats panel
         JPanel statsPanel = new JPanel(new BorderLayout());
-        statsPanel.setBorder(BorderFactory.createTitledBorder("System Statistics"));
+        statsPanel.setBackground(BACKGROUND_COLOR);
+        statsPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(SECONDARY_COLOR, 2), 
+            "System Statistics",
+            0, 0, new Font("Arial", Font.BOLD, 14), TEXT_COLOR));
         JTextArea statsArea = new JTextArea();
         statsArea.setEditable(false);
         statsArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        statsArea.setBackground(Color.WHITE);
+        statsArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         JScrollPane statsScroll = new JScrollPane(statsArea);
         statsPanel.add(statsScroll, BorderLayout.CENTER);
         
         // Control buttons panel
-        JPanel controlsPanel = new JPanel(new GridLayout(3, 2, 10, 10));
-        controlsPanel.setBorder(BorderFactory.createTitledBorder("Admin Controls"));
+        JPanel controlsPanel = new JPanel(new GridLayout(3, 2, 15, 15));
+        controlsPanel.setBackground(BACKGROUND_COLOR);
+        controlsPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(SECONDARY_COLOR, 2), 
+            "Admin Controls",
+            0, 0, new Font("Arial", Font.BOLD, 14), TEXT_COLOR));
         
-        JButton viewUsersBtn = new JButton("View All Users");
-        JButton viewTasksBtn = new JButton("View All Tasks");
-        JButton viewHistoryBtn = new JButton("View Task History");
-        JButton manageUsersBtn = new JButton("Manage Users");
-        JButton manageTasksBtn = new JButton("Manage Tasks");
-        JButton refreshStatsBtn = new JButton("Refresh Statistics");
+        JButton viewUsersBtn = createStyledButton("View All Users");
+        JButton viewTasksBtn = createStyledButton("View All Tasks");
+        JButton viewHistoryBtn = createSecondaryButton("View Task History");
+        JButton manageUsersBtn = createStyledButton("Manage Users");
+        JButton manageTasksBtn = createStyledButton("Manage Tasks");
+        JButton refreshStatsBtn = createSecondaryButton("Refresh Statistics");
         
         viewUsersBtn.addActionListener(e -> showAllUsers());
         viewTasksBtn.addActionListener(e -> showAllTasks());
