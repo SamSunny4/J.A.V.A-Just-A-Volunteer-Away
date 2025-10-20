@@ -374,23 +374,63 @@ public class VolunteerGUI extends JFrame {
         JButton cancelButton = createSecondaryButton("Cancel");
         
         submitButton.addActionListener(e -> {
+            // Get values
+            String username = usernameField.getText().trim();
+            String password = new String(passwordField.getPassword());
+            String email = emailField.getText().trim();
+            String firstName = firstNameField.getText().trim();
+            String lastName = lastNameField.getText().trim();
+            String phone = phoneField.getText().trim();
+            
+            // Validate empty fields
+            if (username.isEmpty() || password.isEmpty() || email.isEmpty() || 
+                firstName.isEmpty() || lastName.isEmpty() || phone.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, 
+                    "All fields are required!", 
+                    "Validation Error", 
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // Validate email format
+            if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+                JOptionPane.showMessageDialog(dialog, 
+                    "Invalid email format!\nExample: user@example.com", 
+                    "Validation Error", 
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // Validate password strength (minimum 8 characters)
+            if (password.length() < 8) {
+                JOptionPane.showMessageDialog(dialog, 
+                    "Password must be at least 8 characters long!", 
+                    "Validation Error", 
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // Validate phone number (basic check for digits)
+            if (!phone.matches("^[0-9+\\-\\s()]{10,}$")) {
+                JOptionPane.showMessageDialog(dialog, 
+                    "Invalid phone number format!", 
+                    "Validation Error", 
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // Create user if all validations pass
             String role = roleCombo.getSelectedIndex() == 0 ? "ELDERLY" : "VOLUNTEER";
-            User newUser = new User(
-                usernameField.getText().trim(),
-                new String(passwordField.getPassword()),
-                emailField.getText().trim(),
-                firstNameField.getText().trim(),
-                lastNameField.getText().trim(),
-                phoneField.getText().trim(),
-                role
-            );
+            User newUser = new User(username, password, email, firstName, lastName, phone, role);
             
             if (DatabaseManager.registerUser(newUser)) {
                 JOptionPane.showMessageDialog(dialog, "Registration successful! You can now log in.");
                 dialog.dispose();
             } else {
-                JOptionPane.showMessageDialog(dialog, "Registration failed. Username or email might already exist.", 
-                    "Registration Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, 
+                    "Registration failed. Username or email might already exist.", 
+                    "Registration Error", 
+                    JOptionPane.ERROR_MESSAGE);
             }
         });
         
