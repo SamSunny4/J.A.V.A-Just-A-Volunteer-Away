@@ -168,7 +168,7 @@ public class VolunteerGUI extends JFrame {
      */
     private void startSplashTimer() {
         // Use a Timer to transition from splash to login after delay
-        javax.swing.Timer timer = new javax.swing.Timer(6000, e -> {
+        javax.swing.Timer timer = new javax.swing.Timer(9000, e -> {
             cardLayout.show(mainPanel, LOGIN_PANEL);
         });
         timer.setRepeats(false);
