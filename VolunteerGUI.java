@@ -59,9 +59,6 @@ public class VolunteerGUI extends JFrame {
     private static final String VOLUNTEER_PANEL = "Volunteer";
     private static final String ADMIN_PANEL = "Admin";
     
-    // Splash GIF dimensions
-    private static final int SPLASH_GIF_WIDTH = 512;
-    private static final int SPLASH_GIF_HEIGHT = 288;
     
     public VolunteerGUI() {
         setTitle("J.A.V.A - Just a Volunteer Away");
@@ -113,7 +110,7 @@ public class VolunteerGUI extends JFrame {
     private JPanel createSplashPanel() {
         splashPanel = new JPanel(new BorderLayout(15, 15));
         splashPanel.setBackground(BACKGROUND_COLOR);
-        splashPanel.setBorder(BorderFactory.createEmptyBorder(50, 50, 50, 50));
+        splashPanel.setBorder(BorderFactory.createEmptyBorder(100, 100, 100, 100));
         
         // Title
         // JLabel titleLabel = new JLabel("J.A.V.A", SwingConstants.CENTER);
@@ -139,16 +136,8 @@ public class VolunteerGUI extends JFrame {
             File gifFile = new File("splash.gif");
             if (gifFile.exists()) {
                 ImageIcon originalIcon = new ImageIcon("splash.gif");
-                
-                // Scale the image to custom dimensions
-                java.awt.Image scaledImage = originalIcon.getImage().getScaledInstance(
-                    SPLASH_GIF_WIDTH, 
-                    SPLASH_GIF_HEIGHT, 
-                    java.awt.Image.SCALE_DEFAULT
-                );
-                
-                ImageIcon scaledIcon = new ImageIcon(scaledImage);
-                loadingLabel.setIcon(scaledIcon);
+                // Use original size - no scaling
+                loadingLabel.setIcon(originalIcon);
             } else {
                 // Fallback text if GIF not found
                 loadingLabel.setText("Loading Application...");
