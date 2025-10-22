@@ -15,6 +15,8 @@ import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -41,19 +43,25 @@ public class VolunteerGUI extends JFrame {
     private User currentUser = null;
     private CardLayout cardLayout;
     private JPanel mainPanel;
+    private JPanel splashPanel;
     
     // Color Theme
     private static final Color PRIMARY_COLOR = new Color(255, 140, 0);      // Orange
     private static final Color SECONDARY_COLOR = new Color(173, 216, 230);  // Light Blue
-    private static final Color BACKGROUND_COLOR = new Color(235, 228, 220); // Beige
+    private static final Color BACKGROUND_COLOR = new Color(255, 248, 234); // Beige
     private static final Color TEXT_COLOR = new Color(0, 0, 0);
     private static final Color BUTTON_HOVER = new Color(255, 165, 0);       // Lighter Orange
     
     // Panel names
+    private static final String SPLASH_PANEL = "Splash";
     private static final String LOGIN_PANEL = "Login";
     private static final String ELDERLY_PANEL = "Elderly";
     private static final String VOLUNTEER_PANEL = "Volunteer";
     private static final String ADMIN_PANEL = "Admin";
+    
+    // Splash GIF dimensions
+    private static final int SPLASH_GIF_WIDTH = 512;
+    private static final int SPLASH_GIF_HEIGHT = 288;
     
     public VolunteerGUI() {
         setTitle("J.A.V.A - Just a Volunteer Away");
@@ -86,13 +94,96 @@ public class VolunteerGUI extends JFrame {
         mainPanel.setBackground(BACKGROUND_COLOR);
         
         // Add panels
+        mainPanel.add(createSplashPanel(), SPLASH_PANEL);
         mainPanel.add(createLoginPanel(), LOGIN_PANEL);
         mainPanel.add(createElderlyPanel(), ELDERLY_PANEL);
         mainPanel.add(createVolunteerPanel(), VOLUNTEER_PANEL);
         mainPanel.add(createAdminPanel(), ADMIN_PANEL);
         
         add(mainPanel);
-        cardLayout.show(mainPanel, LOGIN_PANEL);
+        cardLayout.show(mainPanel, SPLASH_PANEL);
+        
+        // Start splash timer
+        startSplashTimer();
+    }
+    
+    /**
+     * Creates the splash screen panel with customizable GIF size
+     */
+    private JPanel createSplashPanel() {
+        splashPanel = new JPanel(new BorderLayout(15, 15));
+        splashPanel.setBackground(BACKGROUND_COLOR);
+        splashPanel.setBorder(BorderFactory.createEmptyBorder(50, 50, 50, 50));
+        
+        // Title
+        // JLabel titleLabel = new JLabel("J.A.V.A", SwingConstants.CENTER);
+        // titleLabel.setFont(new Font("Arial", Font.BOLD, 48));
+        // titleLabel.setForeground(PRIMARY_COLOR);
+        // splashPanel.add(titleLabel, BorderLayout.NORTH);
+        
+        // Loading animation panel
+        JPanel centerPanel = new JPanel(new BorderLayout(10, 10));
+        centerPanel.setBackground(BACKGROUND_COLOR);
+        
+        // Subtitle
+        // JLabel subtitleLabel = new JLabel("Just a Volunteer Away", SwingConstants.CENTER);
+        // subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 20));
+        // subtitleLabel.setForeground(TEXT_COLOR);
+        // centerPanel.add(subtitleLabel, BorderLayout.NORTH);
+        
+        // Loading GIF with custom size
+        JLabel loadingLabel = new JLabel();
+        loadingLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        try {
+            File gifFile = new File("splash.gif");
+            if (gifFile.exists()) {
+                ImageIcon originalIcon = new ImageIcon("splash.gif");
+                
+                // Scale the image to custom dimensions
+                java.awt.Image scaledImage = originalIcon.getImage().getScaledInstance(
+                    SPLASH_GIF_WIDTH, 
+                    SPLASH_GIF_HEIGHT, 
+                    java.awt.Image.SCALE_DEFAULT
+                );
+                
+                ImageIcon scaledIcon = new ImageIcon(scaledImage);
+                loadingLabel.setIcon(scaledIcon);
+            } else {
+                // Fallback text if GIF not found
+                loadingLabel.setText("Loading Application...");
+                loadingLabel.setFont(new Font("Arial", Font.BOLD, 18));
+                loadingLabel.setForeground(PRIMARY_COLOR);
+            }
+        } catch (Exception e) {
+            loadingLabel.setText("Loading Application...");
+            loadingLabel.setFont(new Font("Arial", Font.BOLD, 18));
+            loadingLabel.setForeground(PRIMARY_COLOR);
+            System.err.println("Error loading splash GIF: " + e.getMessage());
+        }
+        
+        centerPanel.add(loadingLabel, BorderLayout.CENTER);
+        splashPanel.add(centerPanel, BorderLayout.CENTER);
+        
+        // Version info
+        JLabel versionLabel = new JLabel("Version 1.0 - Initializing...", SwingConstants.CENTER);
+        versionLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        versionLabel.setForeground(new Color(108, 117, 125));
+        splashPanel.add(versionLabel, BorderLayout.SOUTH);
+        
+        return splashPanel;
+    }
+    
+    /**
+     * Starts the splash screen timer and transitions to login
+     */
+    private void startSplashTimer() {
+        // Use a Timer to transition from splash to login after delay
+        javax.swing.Timer timer = new javax.swing.Timer(5000, e -> {
+            cardLayout.show(mainPanel, LOGIN_PANEL);
+        });
+        timer.setRepeats(false);
+        timer.start();
     }
     
     /**
@@ -188,10 +279,12 @@ public class VolunteerGUI extends JFrame {
         // Center panel with login form
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setBackground(BACKGROUND_COLOR);
+        /* 
         centerPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(SECONDARY_COLOR, 2),
             BorderFactory.createEmptyBorder(20, 30, 20, 30)
         ));
+        */
         
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(8, 8, 8, 8);
@@ -447,7 +540,7 @@ public class VolunteerGUI extends JFrame {
     // ==================== ELDERLY PANEL ====================
     
     private JPanel elderlyPanel;
-    private JTextArea elderlyTasksArea;
+    private JPanel elderlyTasksContainer;
     
     private JPanel createElderlyPanel() {
         elderlyPanel = new JPanel(new BorderLayout(10, 10));
@@ -458,7 +551,7 @@ public class VolunteerGUI extends JFrame {
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(BACKGROUND_COLOR);
         JLabel headerLabel = new JLabel("Elderly User Dashboard", SwingConstants.CENTER);
-        headerLabel.setFont(new Font("Arial", Font.BOLD, 22));
+        headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         headerLabel.setForeground(PRIMARY_COLOR);
         headerPanel.add(headerLabel, BorderLayout.CENTER);
         
@@ -468,16 +561,14 @@ public class VolunteerGUI extends JFrame {
         
         elderlyPanel.add(headerPanel, BorderLayout.NORTH);
         
-        // Center - Task list
-        elderlyTasksArea = new JTextArea();
-        elderlyTasksArea.setEditable(false);
-        elderlyTasksArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        elderlyTasksArea.setBackground(Color.WHITE);
-        elderlyTasksArea.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(SECONDARY_COLOR, 2),
-            BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
-        JScrollPane scrollPane = new JScrollPane(elderlyTasksArea);
+        // Center - Task cards container
+        elderlyTasksContainer = new JPanel();
+        elderlyTasksContainer.setLayout(new BoxLayout(elderlyTasksContainer, BoxLayout.Y_AXIS));
+        elderlyTasksContainer.setBackground(BACKGROUND_COLOR);
+        
+        JScrollPane scrollPane = new JScrollPane(elderlyTasksContainer);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         elderlyPanel.add(scrollPane, BorderLayout.CENTER);
         
         // Buttons
@@ -510,36 +601,238 @@ public class VolunteerGUI extends JFrame {
         if (currentUser == null) return;
         
         List<Task> tasks = DatabaseManager.getTasksByRequester(currentUser.getUserId());
-        StringBuilder sb = new StringBuilder();
-        sb.append("Your Task Requests:\n");
-        sb.append("=================================================================\n\n");
+        elderlyTasksContainer.removeAll();
         
         if (tasks.isEmpty()) {
-            sb.append("You haven't created any tasks yet.\n");
+            JPanel emptyPanel = createEmptyStatePanel("No tasks yet", "Create your first task to get started!");
+            elderlyTasksContainer.add(emptyPanel);
         } else {
             for (Task task : tasks) {
-                sb.append("ID: ").append(task.getTaskId()).append(" | ").append(task.getTitle()).append("\n");
-                sb.append("   Status: ").append(task.getStatus()).append("\n");
-                sb.append("   Date: ").append(task.getScheduledDate()).append(" at ").append(task.getScheduledTime()).append("\n");
-                sb.append("   Location: ").append(task.getLocation()).append("\n");
-                if (task.getVolunteerId() != null) {
-                    sb.append("   Assigned to Volunteer ID: ").append(task.getVolunteerId()).append("\n");
-                }
-                // Show confirmation status
-                if (task.isVolunteerConfirmed()) {
-                    sb.append("   ✓ Volunteer confirmed completion\n");
-                }
-                if (task.isElderlyConfirmed()) {
-                    sb.append("   ✓ You confirmed completion\n");
-                }
-                if (task.getStatus().equals("PENDING_ELDERLY_CONFIRMATION")) {
-                    sb.append("   ⚠ Awaiting your confirmation!\n");
-                }
-                sb.append("-----------------------------------------------------------------\n");
+                JPanel taskCard = createTaskCard(task, true);
+                elderlyTasksContainer.add(taskCard);
+                elderlyTasksContainer.add(Box.createVerticalStrut(15));
             }
         }
         
-        elderlyTasksArea.setText(sb.toString());
+        elderlyTasksContainer.revalidate();
+        elderlyTasksContainer.repaint();
+    }
+    
+    /**
+     * Creates a modern task card panel
+     */
+    private JPanel createTaskCard(Task task, boolean isElderlyView) {
+        JPanel card = new JPanel();
+        card.setLayout(new BorderLayout(15, 15));
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+        card.setMaximumSize(new java.awt.Dimension(Integer.MAX_VALUE, 200));
+        
+        // Left section - Main info
+        JPanel leftPanel = new JPanel(new GridBagLayout());
+        leftPanel.setBackground(Color.WHITE);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(3, 0, 3, 0);
+        
+        // Title
+        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
+        JLabel titleLabel = new JLabel(task.getTitle());
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        titleLabel.setForeground(new Color(33, 37, 41));
+        leftPanel.add(titleLabel, gbc);
+        
+        // ID
+        gbc.gridy = 1; gbc.gridwidth = 1;
+        JLabel idLabelText = new JLabel("Task ID: ");
+        idLabelText.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        idLabelText.setForeground(new Color(73, 80, 87));
+        leftPanel.add(idLabelText, gbc);
+        
+        gbc.gridx = 1;
+        JLabel idValue = new JLabel(String.valueOf(task.getTaskId()));
+        idValue.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        idValue.setForeground(new Color(108, 117, 125));
+        leftPanel.add(idValue, gbc);
+        
+        // Date
+        gbc.gridx = 0; gbc.gridy = 2;
+        JLabel dateLabel = new JLabel("Date: ");
+        dateLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        dateLabel.setForeground(new Color(73, 80, 87));
+        leftPanel.add(dateLabel, gbc);
+        
+        gbc.gridx = 1;
+        JLabel dateValue = new JLabel(task.getScheduledDate());
+        dateValue.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        dateValue.setForeground(new Color(33, 37, 41));
+        leftPanel.add(dateValue, gbc);
+        
+        // Time
+        gbc.gridx = 0; gbc.gridy = 3;
+        JLabel timeLabel = new JLabel("Time: ");
+        timeLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        timeLabel.setForeground(new Color(73, 80, 87));
+        leftPanel.add(timeLabel, gbc);
+        
+        gbc.gridx = 1;
+        JLabel timeValue = new JLabel(task.getScheduledTime());
+        timeValue.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        timeValue.setForeground(new Color(33, 37, 41));
+        leftPanel.add(timeValue, gbc);
+        
+        // Duration
+        gbc.gridx = 0; gbc.gridy = 4;
+        JLabel durationLabel = new JLabel("Duration: ");
+        durationLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        durationLabel.setForeground(new Color(73, 80, 87));
+        leftPanel.add(durationLabel, gbc);
+        
+        gbc.gridx = 1;
+        JLabel durationValue = new JLabel(task.getEstimatedDuration() + " minutes");
+        durationValue.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        durationValue.setForeground(new Color(33, 37, 41));
+        leftPanel.add(durationValue, gbc);
+        
+        // Location
+        gbc.gridx = 0; gbc.gridy = 5;
+        JLabel locationLabel = new JLabel("Location: ");
+        locationLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        locationLabel.setForeground(new Color(73, 80, 87));
+        leftPanel.add(locationLabel, gbc);
+        
+        gbc.gridx = 1;
+        JLabel locationValue = new JLabel(task.getLocation());
+        locationValue.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        locationValue.setForeground(new Color(33, 37, 41));
+        leftPanel.add(locationValue, gbc);
+        
+        // Volunteer info
+        if (task.getVolunteerId() != null) {
+            gbc.gridx = 0; gbc.gridy = 6;
+            JLabel volunteerLabel = new JLabel("Volunteer: ");
+            volunteerLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            volunteerLabel.setForeground(new Color(73, 80, 87));
+            leftPanel.add(volunteerLabel, gbc);
+            
+            gbc.gridx = 1;
+            JLabel volunteerValue = new JLabel("ID #" + task.getVolunteerId());
+            volunteerValue.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            volunteerValue.setForeground(new Color(40, 167, 69));
+            leftPanel.add(volunteerValue, gbc);
+        }
+        
+        card.add(leftPanel, BorderLayout.CENTER);
+        
+        // Right section - Status and badges
+        JPanel rightPanel = new JPanel();
+        rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
+        rightPanel.setBackground(Color.WHITE);
+        
+        // Status badge
+        JLabel statusBadge = createStatusBadge(task.getStatus());
+        statusBadge.setAlignmentX(JLabel.RIGHT_ALIGNMENT);
+        rightPanel.add(statusBadge);
+        rightPanel.add(Box.createVerticalStrut(10));
+        
+        // Confirmation badges
+        if (task.isVolunteerConfirmed()) {
+            JLabel vConfirm = new JLabel("Volunteer Confirmed");
+            vConfirm.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            vConfirm.setForeground(new Color(40, 167, 69));
+            vConfirm.setAlignmentX(JLabel.RIGHT_ALIGNMENT);
+            rightPanel.add(vConfirm);
+            rightPanel.add(Box.createVerticalStrut(5));
+        }
+        
+        if (task.isElderlyConfirmed()) {
+            JLabel eConfirm = new JLabel("Elderly Confirmed");
+            eConfirm.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            eConfirm.setForeground(new Color(40, 167, 69));
+            eConfirm.setAlignmentX(JLabel.RIGHT_ALIGNMENT);
+            rightPanel.add(eConfirm);
+        }
+        
+        if (task.getStatus().equals("PENDING_ELDERLY_CONFIRMATION") || 
+            task.getStatus().equals("PENDING_VOLUNTEER_CONFIRMATION")) {
+            JLabel pendingLabel = new JLabel("Awaiting Confirmation");
+            pendingLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            pendingLabel.setForeground(new Color(255, 193, 7));
+            pendingLabel.setAlignmentX(JLabel.RIGHT_ALIGNMENT);
+            rightPanel.add(pendingLabel);
+        }
+        
+        card.add(rightPanel, BorderLayout.EAST);
+        
+        return card;
+    }
+    
+    /**
+     * Creates a status badge with appropriate color
+     */
+    private JLabel createStatusBadge(String status) {
+        JLabel badge = new JLabel(" " + status + " ");
+        badge.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        badge.setOpaque(true);
+        badge.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
+        
+        switch (status) {
+            case "AVAILABLE":
+                badge.setBackground(new Color(23, 162, 184));
+                badge.setForeground(Color.WHITE);
+                break;
+            case "ASSIGNED":
+            case "IN_PROGRESS":
+                badge.setBackground(new Color(255, 193, 7));
+                badge.setForeground(Color.BLACK);
+                break;
+            case "COMPLETED":
+                badge.setBackground(new Color(40, 167, 69));
+                badge.setForeground(Color.WHITE);
+                break;
+            case "CANCELLED":
+                badge.setBackground(new Color(108, 117, 125));
+                badge.setForeground(Color.WHITE);
+                break;
+            case "PENDING_ELDERLY_CONFIRMATION":
+            case "PENDING_VOLUNTEER_CONFIRMATION":
+                badge.setBackground(new Color(255, 140, 0));
+                badge.setForeground(Color.WHITE);
+                break;
+            default:
+                badge.setBackground(new Color(108, 117, 125));
+                badge.setForeground(Color.WHITE);
+        }
+        
+        return badge;
+    }
+    
+    /**
+     * Creates an empty state panel
+     */
+    private JPanel createEmptyStatePanel(String title, String message) {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(BACKGROUND_COLOR);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.insets = new Insets(10, 0, 10, 0);
+        
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titleLabel.setForeground(new Color(108, 117, 125));
+        panel.add(titleLabel, gbc);
+        
+        gbc.gridy = 1;
+        JLabel messageLabel = new JLabel(message);
+        messageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        messageLabel.setForeground(new Color(108, 117, 125));
+        panel.add(messageLabel, gbc);
+        
+        return panel;
     }
     
     private void showCreateTaskDialog() {
@@ -818,7 +1111,7 @@ public class VolunteerGUI extends JFrame {
     // ==================== VOLUNTEER PANEL ====================
     
     private JPanel volunteerPanel;
-    private JTextArea volunteerTasksArea;
+    private JPanel volunteerTasksContainer;
     private JLabel statsLabel;
     
     private JPanel createVolunteerPanel() {
@@ -847,16 +1140,14 @@ public class VolunteerGUI extends JFrame {
         
         volunteerPanel.add(headerPanel, BorderLayout.NORTH);
         
-        // Center - Task list
-        volunteerTasksArea = new JTextArea();
-        volunteerTasksArea.setEditable(false);
-        volunteerTasksArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        volunteerTasksArea.setBackground(Color.WHITE);
-        volunteerTasksArea.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(SECONDARY_COLOR, 2),
-            BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
-        JScrollPane scrollPane = new JScrollPane(volunteerTasksArea);
+        // Center - Task list with card layout
+        volunteerTasksContainer = new JPanel();
+        volunteerTasksContainer.setLayout(new BoxLayout(volunteerTasksContainer, BoxLayout.Y_AXIS));
+        volunteerTasksContainer.setBackground(Color.WHITE);
+        
+        JScrollPane scrollPane = new JScrollPane(volunteerTasksContainer);
+        scrollPane.setBorder(BorderFactory.createLineBorder(SECONDARY_COLOR, 2));
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         volunteerPanel.add(scrollPane, BorderLayout.CENTER);
         
         // Buttons
@@ -898,24 +1189,25 @@ public class VolunteerGUI extends JFrame {
     
     private void showAvailableTasks() {
         List<Task> tasks = DatabaseManager.getAvailableTasks();
-        StringBuilder sb = new StringBuilder();
-        sb.append("Available Tasks:\n");
-        sb.append("=================================================================\n\n");
+        
+        volunteerTasksContainer.removeAll();
         
         if (tasks.isEmpty()) {
-            sb.append("No available tasks at the moment.\n");
+            JPanel emptyPanel = createEmptyStatePanel(
+                "No Available Tasks",
+                "There are no tasks available to accept at the moment. Please check back later!"
+            );
+            volunteerTasksContainer.add(emptyPanel);
         } else {
             for (Task task : tasks) {
-                sb.append("ID: ").append(task.getTaskId()).append(" | ").append(task.getTitle()).append("\n");
-                sb.append("   Description: ").append(task.getDescription()).append("\n");
-                sb.append("   Date: ").append(task.getScheduledDate()).append(" at ").append(task.getScheduledTime()).append("\n");
-                sb.append("   Duration: ").append(task.getEstimatedDuration()).append(" minutes\n");
-                sb.append("   Location: ").append(task.getLocation()).append("\n");
-                sb.append("-----------------------------------------------------------------\n");
+                JPanel taskCard = createTaskCard(task, true);
+                volunteerTasksContainer.add(taskCard);
+                volunteerTasksContainer.add(Box.createVerticalStrut(10));
             }
         }
         
-        volunteerTasksArea.setText(sb.toString());
+        volunteerTasksContainer.revalidate();
+        volunteerTasksContainer.repaint();
     }
     
     private void showAcceptTaskDialog() {
@@ -957,34 +1249,25 @@ public class VolunteerGUI extends JFrame {
     
     private void showMyAssignedTasks() {
         List<Task> tasks = DatabaseManager.getTasksByVolunteer(currentUser.getUserId());
-        StringBuilder sb = new StringBuilder();
-        sb.append("My Assigned Tasks:\n");
-        sb.append("=================================================================\n\n");
+        
+        volunteerTasksContainer.removeAll();
         
         if (tasks.isEmpty()) {
-            sb.append("You don't have any assigned tasks yet.\n");
+            JPanel emptyPanel = createEmptyStatePanel(
+                "No Assigned Tasks",
+                "You don't have any assigned tasks yet. Check out the available tasks to get started!"
+            );
+            volunteerTasksContainer.add(emptyPanel);
         } else {
             for (Task task : tasks) {
-                sb.append("ID: ").append(task.getTaskId()).append(" | ").append(task.getTitle()).append("\n");
-                sb.append("   Status: ").append(task.getStatus()).append("\n");
-                sb.append("   Date: ").append(task.getScheduledDate()).append(" at ").append(task.getScheduledTime()).append("\n");
-                sb.append("   Duration: ").append(task.getEstimatedDuration()).append(" minutes\n");
-                sb.append("   Location: ").append(task.getLocation()).append("\n");
-                // Show confirmation status
-                if (task.isVolunteerConfirmed()) {
-                    sb.append("   ✓ You confirmed completion\n");
-                }
-                if (task.isElderlyConfirmed()) {
-                    sb.append("   ✓ Elderly confirmed completion\n");
-                }
-                if (task.getStatus().equals("PENDING_VOLUNTEER_CONFIRMATION")) {
-                    sb.append("   ⚠ Awaiting your confirmation!\n");
-                }
-                sb.append("-----------------------------------------------------------------\n");
+                JPanel taskCard = createTaskCard(task, false);
+                volunteerTasksContainer.add(taskCard);
+                volunteerTasksContainer.add(Box.createVerticalStrut(10));
             }
         }
         
-        volunteerTasksArea.setText(sb.toString());
+        volunteerTasksContainer.revalidate();
+        volunteerTasksContainer.repaint();
     }
     
     private void showUpdateStatusDialog() {
