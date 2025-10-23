@@ -133,9 +133,9 @@ public class VolunteerGUI extends JFrame {
         loadingLabel.setHorizontalAlignment(SwingConstants.CENTER);
         
         try {
-            File gifFile = new File("splash.gif");
+            File gifFile = new File("public/splash.gif");
             if (gifFile.exists()) {
-                ImageIcon originalIcon = new ImageIcon("splash.gif");
+                ImageIcon originalIcon = new ImageIcon("public/splash.gif");
                 // Use original size - no scaling
                 loadingLabel.setIcon(originalIcon);
             } else {
@@ -242,7 +242,7 @@ public class VolunteerGUI extends JFrame {
         
         // Load and display logo
         try {
-            File logoFile = new File("logo.png");
+            File logoFile = new File("public/logo.png");
             if (logoFile.exists()) {
                 BufferedImage logoImg = ImageIO.read(logoFile);
                 ImageIcon logoIcon = new ImageIcon(logoImg);

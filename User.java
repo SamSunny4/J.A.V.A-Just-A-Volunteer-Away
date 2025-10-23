@@ -1,6 +1,4 @@
-/**
- * User class representing both elderly users and volunteers
- */
+
 public class User {
     private int userId;
     private String username;
