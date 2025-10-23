@@ -168,7 +168,7 @@ public class VolunteerGUI extends JFrame {
      */
     private void startSplashTimer() {
         // Use a Timer to transition from splash to login after delay
-        javax.swing.Timer timer = new javax.swing.Timer(9000, e -> {
+        javax.swing.Timer timer = new javax.swing.Timer(6000, e -> {
             cardLayout.show(mainPanel, LOGIN_PANEL);
         });
         timer.setRepeats(false);
@@ -618,7 +618,7 @@ public class VolunteerGUI extends JFrame {
             BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
             BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
-        card.setMaximumSize(new java.awt.Dimension(Integer.MAX_VALUE, 200));
+        card.setMaximumSize(new java.awt.Dimension(Integer.MAX_VALUE, 230));
         
         // Left section - Main info
         JPanel leftPanel = new JPanel(new GridBagLayout());
@@ -699,16 +699,31 @@ public class VolunteerGUI extends JFrame {
         locationValue.setForeground(new Color(33, 37, 41));
         leftPanel.add(locationValue, gbc);
         
+        // Requester (Elderly) info
+        gbc.gridx = 0; gbc.gridy = 6;
+        JLabel requesterLabel = new JLabel("Requester: ");
+        requesterLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        requesterLabel.setForeground(new Color(73, 80, 87));
+        leftPanel.add(requesterLabel, gbc);
+        
+        gbc.gridx = 1;
+        String requesterName = DatabaseManager.getUserNameById(task.getRequesterId());
+        JLabel requesterValue = new JLabel(requesterName + " (#" + task.getRequesterId() + ")");
+        requesterValue.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        requesterValue.setForeground(new Color(33, 37, 41));
+        leftPanel.add(requesterValue, gbc);
+        
         // Volunteer info
         if (task.getVolunteerId() != null) {
-            gbc.gridx = 0; gbc.gridy = 6;
+            gbc.gridx = 0; gbc.gridy = 7;
             JLabel volunteerLabel = new JLabel("Volunteer: ");
             volunteerLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
             volunteerLabel.setForeground(new Color(73, 80, 87));
             leftPanel.add(volunteerLabel, gbc);
             
             gbc.gridx = 1;
-            JLabel volunteerValue = new JLabel("ID #" + task.getVolunteerId());
+            String volunteerName = DatabaseManager.getUserNameById(task.getVolunteerId());
+            JLabel volunteerValue = new JLabel(volunteerName + " (#" + task.getVolunteerId() + ")");
             volunteerValue.setFont(new Font("Segoe UI", Font.BOLD, 13));
             volunteerValue.setForeground(new Color(40, 167, 69));
             leftPanel.add(volunteerValue, gbc);
@@ -1544,18 +1559,30 @@ public class VolunteerGUI extends JFrame {
             data[i][0] = task.getTaskId();
             data[i][1] = task.getTitle();
             data[i][2] = task.getStatus();
-            data[i][3] = "User #" + task.getRequesterId();
-            data[i][4] = task.getVolunteerId() != null ? "User #" + task.getVolunteerId() : "None";
+            
+            // Get requester name
+            String requesterName = DatabaseManager.getUserNameById(task.getRequesterId());
+            data[i][3] = requesterName + " (#" + task.getRequesterId() + ")";
+            
+            // Get volunteer name
+            if (task.getVolunteerId() != null) {
+                String volunteerName = DatabaseManager.getUserNameById(task.getVolunteerId());
+                data[i][4] = volunteerName + " (#" + task.getVolunteerId() + ")";
+            } else {
+                data[i][4] = "None";
+            }
+            
             data[i][5] = task.getScheduledDate();
             data[i][6] = task.getEstimatedDuration() + " min";
         }
         
         JDialog dialog = new JDialog(this, "All Tasks", true);
-        dialog.setSize(900, 500);
+        dialog.setSize(1000, 600);
         dialog.setLocationRelativeTo(this);
         
         JTable table = new JTable(data, columnNames);
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        table.setRowHeight(25);
         JScrollPane scrollPane = new JScrollPane(table);
         
         JButton closeButton = new JButton("Close");

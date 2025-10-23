@@ -32,7 +32,6 @@ public class DatabaseManager {
         return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
     }
     
-    // ==================== USER OPERATIONS ====================
     
     /**
      * Register a new user (elderly or volunteer)
@@ -193,7 +192,11 @@ public class DatabaseManager {
             if (rowsAffected > 0) {
                 ResultSet rs = stmt.getGeneratedKeys();
                 if (rs.next()) {
-                    task.setTaskId(rs.getInt(1));
+                    int taskId = rs.getInt(1);
+                    task.setTaskId(taskId);
+                    
+                    // Add task history entry
+                    addTaskHistory(taskId, task.getRequesterId(), "CREATED", null, task.getStatus());
                 }
                 return true;
             }
@@ -271,6 +274,12 @@ public class DatabaseManager {
      * Assign a task to a volunteer
      */
     public static boolean assignTask(int taskId, int volunteerId) {
+        // Get the task first to check current status and add history
+        Task task = getTaskById(taskId);
+        if (task == null || !task.getStatus().equals("AVAILABLE")) {
+            return false;
+        }
+        
         String sql = "UPDATE tasks SET volunteer_id = ?, status = 'ASSIGNED' " +
                      "WHERE task_id = ? AND status = 'AVAILABLE'";
         
@@ -280,7 +289,14 @@ public class DatabaseManager {
             stmt.setInt(1, volunteerId);
             stmt.setInt(2, taskId);
             
-            return stmt.executeUpdate() > 0;
+            int rowsAffected = stmt.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                // Add task history entry
+                addTaskHistory(taskId, volunteerId, "ASSIGNED", "AVAILABLE", "ASSIGNED");
+                return true;
+            }
+            return false;
         } catch (SQLException e) {
             System.err.println("Error assigning task: " + e.getMessage());
         }
@@ -291,6 +307,13 @@ public class DatabaseManager {
      * Update task status
      */
     public static boolean updateTaskStatus(int taskId, String status) {
+        // Get the task first to check current status
+        Task task = getTaskById(taskId);
+        if (task == null) {
+            return false;
+        }
+        
+        String previousStatus = task.getStatus();
         String sql = "UPDATE tasks SET status = ? WHERE task_id = ?";
         
         try (Connection conn = getConnection();
@@ -301,12 +324,16 @@ public class DatabaseManager {
             
             int rowsAffected = stmt.executeUpdate();
             
-            // If task completed, update volunteer points
+            // If task completed, update volunteer points and add history
             if (rowsAffected > 0 && status.equals("COMPLETED")) {
-                Task task = getTaskById(taskId);
-                if (task != null && task.getVolunteerId() != null) {
+                if (task.getVolunteerId() != null) {
                     updateVolunteerPoints(task.getVolunteerId(), task.getEstimatedDuration());
+                    addTaskHistory(taskId, task.getVolunteerId(), "COMPLETED", previousStatus, status);
                 }
+            } else if (rowsAffected > 0) {
+                // Add history for other status changes
+                int changedBy = task.getVolunteerId() != null ? task.getVolunteerId() : task.getRequesterId();
+                addTaskHistory(taskId, changedBy, "STATUS_UPDATED", previousStatus, status);
             }
             
             return rowsAffected > 0;
@@ -326,6 +353,8 @@ public class DatabaseManager {
             return false;
         }
         
+        String previousStatus = task.getStatus();
+        
         // If elderly already confirmed, mark as COMPLETED
         if (task.isElderlyConfirmed()) {
             String sql = "UPDATE tasks SET volunteer_confirmed = TRUE, status = 'COMPLETED' WHERE task_id = ? AND volunteer_id = ?";
@@ -338,6 +367,7 @@ public class DatabaseManager {
                 int rowsAffected = stmt.executeUpdate();
                 if (rowsAffected > 0) {
                     updateVolunteerPoints(volunteerId, task.getEstimatedDuration());
+                    addTaskHistory(taskId, volunteerId, "COMPLETED", previousStatus, "COMPLETED");
                     return true;
                 }
             } catch (SQLException e) {
@@ -352,7 +382,11 @@ public class DatabaseManager {
                 stmt.setInt(1, taskId);
                 stmt.setInt(2, volunteerId);
                 
-                return stmt.executeUpdate() > 0;
+                int rowsAffected = stmt.executeUpdate();
+                if (rowsAffected > 0) {
+                    addTaskHistory(taskId, volunteerId, "VOLUNTEER_CONFIRMED", previousStatus, "PENDING_ELDERLY_CONFIRMATION");
+                    return true;
+                }
             } catch (SQLException e) {
                 System.err.println("Error confirming task: " + e.getMessage());
             }
@@ -375,6 +409,8 @@ public class DatabaseManager {
             return false; // Already fully completed
         }
         
+        String previousStatus = task.getStatus();
+        
         // If volunteer already confirmed, mark as COMPLETED
         if (task.isVolunteerConfirmed()) {
             String sql = "UPDATE tasks SET elderly_confirmed = TRUE, status = 'COMPLETED' WHERE task_id = ? AND requester_id = ?";
@@ -385,8 +421,11 @@ public class DatabaseManager {
                 stmt.setInt(2, requesterId);
                 
                 int rowsAffected = stmt.executeUpdate();
-                if (rowsAffected > 0 && task.getVolunteerId() != null) {
-                    updateVolunteerPoints(task.getVolunteerId(), task.getEstimatedDuration());
+                if (rowsAffected > 0) {
+                    if (task.getVolunteerId() != null) {
+                        updateVolunteerPoints(task.getVolunteerId(), task.getEstimatedDuration());
+                    }
+                    addTaskHistory(taskId, requesterId, "COMPLETED", previousStatus, "COMPLETED");
                     return true;
                 }
                 return rowsAffected > 0;
@@ -402,7 +441,11 @@ public class DatabaseManager {
                 stmt.setInt(1, taskId);
                 stmt.setInt(2, requesterId);
                 
-                return stmt.executeUpdate() > 0;
+                int rowsAffected = stmt.executeUpdate();
+                if (rowsAffected > 0) {
+                    addTaskHistory(taskId, requesterId, "ELDERLY_CONFIRMED", previousStatus, "PENDING_VOLUNTEER_CONFIRMATION");
+                    return true;
+                }
             } catch (SQLException e) {
                 System.err.println("Error confirming task: " + e.getMessage());
             }
@@ -414,6 +457,15 @@ public class DatabaseManager {
      * Reassign task (remove volunteer, make available again)
      */
     public static boolean reassignTask(int taskId) {
+        // Get task first to record history
+        Task task = getTaskById(taskId);
+        if (task == null || task.getVolunteerId() == null) {
+            return false;
+        }
+        
+        int previousVolunteerId = task.getVolunteerId();
+        String previousStatus = task.getStatus();
+        
         String sql = "UPDATE tasks SET volunteer_id = NULL, status = 'AVAILABLE', " +
                      "volunteer_confirmed = FALSE, elderly_confirmed = FALSE, " +
                      "previous_volunteer_id = volunteer_id, " +
@@ -424,7 +476,13 @@ public class DatabaseManager {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setInt(1, taskId);
-            return stmt.executeUpdate() > 0;
+            int rowsAffected = stmt.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                addTaskHistory(taskId, task.getRequesterId(), "REASSIGNED", previousStatus, "AVAILABLE");
+                return true;
+            }
+            return false;
         } catch (SQLException e) {
             System.err.println("Error reassigning task: " + e.getMessage());
         }
@@ -435,6 +493,12 @@ public class DatabaseManager {
      * Delete a task (only if it hasn't been assigned or completed)
      */
     public static boolean deleteTask(int taskId, int requesterId) {
+        // Get task first to record history
+        Task task = getTaskById(taskId);
+        if (task == null || task.getRequesterId() != requesterId) {
+            return false;
+        }
+        
         String sql = "DELETE FROM tasks WHERE task_id = ? AND requester_id = ? AND " +
                      "(status = 'AVAILABLE' OR status = 'CANCELLED')";
         
@@ -443,7 +507,13 @@ public class DatabaseManager {
             
             stmt.setInt(1, taskId);
             stmt.setInt(2, requesterId);
-            return stmt.executeUpdate() > 0;
+            int rowsAffected = stmt.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                // Note: History will be deleted due to CASCADE, but we could log it separately if needed
+                return true;
+            }
+            return false;
         } catch (SQLException e) {
             System.err.println("Error deleting task: " + e.getMessage());
         }
@@ -454,6 +524,14 @@ public class DatabaseManager {
      * Cancel a task (marks as cancelled instead of deleting)
      */
     public static boolean cancelTask(int taskId, int requesterId) {
+        // Get task first to record history
+        Task task = getTaskById(taskId);
+        if (task == null || task.getRequesterId() != requesterId) {
+            return false;
+        }
+        
+        String previousStatus = task.getStatus();
+        
         String sql = "UPDATE tasks SET status = 'CANCELLED' WHERE task_id = ? AND requester_id = ?";
         
         try (Connection conn = getConnection();
@@ -461,7 +539,13 @@ public class DatabaseManager {
             
             stmt.setInt(1, taskId);
             stmt.setInt(2, requesterId);
-            return stmt.executeUpdate() > 0;
+            int rowsAffected = stmt.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                addTaskHistory(taskId, requesterId, "CANCELLED", previousStatus, "CANCELLED");
+                return true;
+            }
+            return false;
         } catch (SQLException e) {
             System.err.println("Error cancelling task: " + e.getMessage());
         }
@@ -471,7 +555,7 @@ public class DatabaseManager {
     /**
      * Get a task by ID
      */
-    private static Task getTaskById(int taskId) {
+    public static Task getTaskById(int taskId) {
         String sql = "SELECT * FROM tasks WHERE task_id = ?";
         
         try (Connection conn = getConnection();
@@ -661,7 +745,30 @@ public class DatabaseManager {
     }
     
     /**
-     * Delete task permanently (admin function)
+     * Get user's full name by ID
+     */
+    public static String getUserNameById(int userId) {
+        String sql = "SELECT first_name, last_name FROM users WHERE user_id = ?";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, userId);
+            ResultSet rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                String firstName = rs.getString("first_name");
+                String lastName = rs.getString("last_name");
+                return firstName + " " + lastName;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting user name: " + e.getMessage());
+        }
+        return "Unknown User";
+    }
+    
+    /**
+     * Admin function to forcefully delete a task
      */
     public static boolean adminDeleteTask(int taskId) {
         String sql = "DELETE FROM tasks WHERE task_id = ?";
